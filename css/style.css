@@ -175,3 +175,29 @@ footer{font-size:.72rem;color:var(--muted);text-align:center;padding:14px}
 .security-panel .panel-head{align-items:center}
 body.pdv-focus .main-wrap{width:100%}
 @media(min-width:901px){body.pdv-focus .pdv-grid{grid-template-columns:minmax(220px,1.16fr) minmax(200px,.86fr) minmax(270px,.92fr)}}
+
+/* ── 8. PERFIS E LOGIN (VERSÃO 1.5) ── */
+body.login-locked .shell{visibility:hidden;pointer-events:none}
+.login-overlay{z-index:140;background:linear-gradient(130deg,#061326e8,#0a2651ed);backdrop-filter:blur(9px)}
+.login-modal{max-width:465px;text-align:center;padding:29px 30px 23px;box-shadow:0 30px 95px #0005}
+.login-emblem{width:58px;height:58px;border-radius:18px;background:linear-gradient(145deg,#2b79ed,#1250af);display:grid;place-items:center;color:white;font-size:2rem;font-weight:900;margin:0 auto 13px}
+.login-modal h2{font-size:1.4rem;margin-bottom:6px}.login-subtitle{font-size:.85rem;margin-bottom:19px}
+.login-role-picker{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:17px}
+.login-role{border:2px solid var(--line);background:var(--surface-2);color:var(--text);border-radius:13px;padding:14px 8px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.login-role strong{font-size:.91rem}.login-role small{font-size:.71rem;color:var(--muted)}
+.login-role.selected{border-color:var(--primary);background:var(--primary-soft)}
+.login-role:disabled{opacity:.4;cursor:not-allowed}
+.login-modal .stack-form{text-align:left}.login-help{font-size:.8rem;margin:0}
+.login-submit{font-size:.92rem;padding:13px}.login-footer{font-size:.7rem;margin:17px 0 0}
+.user-role-chip{display:inline-flex;align-items:center;padding:7px 10px;border-radius:25px;background:var(--primary-soft);color:var(--primary);font-size:.72rem;font-weight:800}
+body.role-operator .sidebar{display:none!important}
+body.role-operator #backupQuick,body.role-operator #pdvHistoryLink,body.role-operator #exportLastSaleExcel{display:none!important}
+body.role-operator .mobile-menu{display:none!important}
+body.role-operator .main-wrap{width:100%;min-width:0}
+body.role-operator #page-caixa{max-width:none}
+body.role-operator:not(.pdv-mode) .main-wrap{min-height:100dvh}
+body.role-operator .pdv-toolbar #pdvSwitchUser{display:inline-block}
+@media(max-width:610px){.login-modal{padding:22px 17px}.topbar #switchUser{font-size:.69rem;padding:8px}.topbar .user-role-chip{font-size:.63rem}}
+@media print{.login-overlay,.operator-panel,#operatorSecurityOverlay,.user-role-chip,#switchUser,#pdvSwitchUser{display:none!important}}
+
+.pdv-profile{font-size:.7rem;display:inline-flex;vertical-align:middle;padding:5px 8px;color:var(--primary);background:var(--primary-soft);border-radius:30px;font-weight:800;white-space:nowrap}

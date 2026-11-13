@@ -27,7 +27,8 @@ function freshData() {
     employees:[],movements:[],sales:[],sessions:[],
     goals:{daily:0,monthly:0},
     ui:{theme:'light'},
-    security:null, // senha do caixa: salt + hash derivado via PBKDF2
+    security:null, // senha antiga do caixa passa a ser senha do dono
+    operatorSecurity:null, // senha separada dos operadores, também derivada
 
     lastBackup:null
   };
@@ -45,6 +46,10 @@ function normalizeData(data) {
     && typeof data.security.salt==='string' && typeof data.security.hash==='string'
     && Number.isSafeInteger(data.security.iterations) && data.security.iterations>=100000
     ? data.security : null;
+  data.operatorSecurity = data.operatorSecurity && typeof data.operatorSecurity==='object'
+    && typeof data.operatorSecurity.salt==='string' && typeof data.operatorSecurity.hash==='string'
+    && Number.isSafeInteger(data.operatorSecurity.iterations) && data.operatorSecurity.iterations>=100000
+    ? data.operatorSecurity : null;
   data.movements.forEach(m=>{if(typeof m.voided!=='boolean')m.voided=false;});
   return data;
 }
