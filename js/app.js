@@ -1,5 +1,5 @@
 /*
- * Papelaria Manager 1.2 — Dev Kayko
+ * Papelaria Manager 1.3 — Dev Kayko
  * Navegação, PDV, financeiro, metas, relatórios e interface.
  * Dados e backups: veja js/data.js
  * Layout e cores: veja css/style.css
@@ -41,6 +41,7 @@ let currentPage='inicio';
 let cart=[];
 let modalHandler=null;
 let numpadFocus='posQty';
+let lastReceiptSaleId=null; // ID para imprimir depois de registrar uma venda
 
 function toast(text) {
   const element=$('toast');
@@ -270,6 +271,7 @@ function finishSale() {
   $('posLastSale').textContent=`✓ Venda registrada em ${formatDateTime(sale.date)} — ${money(sale.total)}. Veja em Relatórios e histórico.`;
   render();
   toast(`Venda registrada no histórico: ${money(sale.total)}`);
+  showReceiptModal(sale.id);
 }
 function cancelSale(id) {
   const sale=db.sales.find(s=>s.id===id);
@@ -474,13 +476,88 @@ function renderReports() {
   }
   $('reportItemRows').innerHTML=[...aggregate.values()].sort((a,b)=>b.qty-a.qty).map(item=>`<tr><td>${item.kind==='p'?'Produto':'Serviço'}</td><td>${esc(item.name)}</td><td>${item.qty}</td><td class="right">${money(fromCents(item.amountCents))}</td></tr>`).join('')||emptyRow(4);
 
-  $('reportSaleRows').innerHTML=[...sales,...canceledSales].sort((a,b)=>b.date.localeCompare(a.date)).map(sale=>`<tr class="${sale.voided?'voided-row':''}"><td>${esc(formatDateTime(sale.date))}</td><td>${esc((sale.items||[]).map(i=>`${i.qty}× ${i.name}`).join(', '))}${sale.voided?' <span class="tag-danger">CANCELADA</span>':''}</td><td>${esc(sale.payment||'—')}</td><td class="right">${money(sale.total)}</td><td class="screen-only">${sale.voided?'—':`<button class="table-action danger" data-action="void-sale" data-id="${esc(sale.id)}">Cancelar</button>`}</td></tr>`).join('')||emptyRow(5);
+  $('reportSaleRows').innerHTML=[...sales,...canceledSales].sort((a,b)=>b.date.localeCompare(a.date)).map(sale=>`<tr class="${sale.voided?'voided-row':''}"><td>${esc(formatDateTime(sale.date))}</td><td>${esc((sale.items||[]).map(i=>`${i.qty}× ${i.name}`).join(', '))}${sale.voided?' <span class="tag-danger">CANCELADA</span>':''}</td><td>${esc(sale.payment||'—')}</td><td class="right">${money(sale.total)}</td><td class="screen-only receipt-history-actions"><button type="button" class="table-action" data-action="receipt-client" data-id="${esc(sale.id)}">Via cliente</button><button type="button" class="table-action" data-action="receipt-store" data-id="${esc(sale.id)}">Via loja</button>${sale.voided?'':`<button class="table-action danger" data-action="void-sale" data-id="${esc(sale.id)}">Cancelar</button>`}</td></tr>`).join('')||emptyRow(5);
   $('reportMovRows').innerHTML=[...moves,...canceledMoves].sort((a,b)=>b.date.localeCompare(a.date)).map(m=>`<tr class="${m.voided?'voided-row':''}"><td>${esc(formatDate(m.date))}</td><td>${esc(m.description)}${m.voided?' <span class="tag-danger">CANCELADO</span>':''}</td><td>${esc(m.category||'Geral')}</td><td>${m.type==='in'?'Entrada':'Saída'}</td><td class="right">${money(m.amount)}</td></tr>`).join('')||emptyRow(5);
   $('reportSessionRows').innerHTML=sessions.sort((a,b)=>(b.openedAt||'').localeCompare(a.openedAt||'')).map(s=>`<tr><td>${esc(formatDateTime(s.openedAt))}</td><td>${s.closedAt?esc(formatDateTime(s.closedAt)):'ABERTO'}</td><td>${money(s.opening)}</td><td>${s.closedAt?money(s.expected):'—'}</td><td>${s.closedAt?money(s.counted):'—'}</td><td>${s.closedAt?`<span class="${Number(s.difference)<0?'balance-negative':Number(s.difference)>0?'balance-positive':''}">${money(s.difference)}</span>`:'—'}</td></tr>`).join('')||emptyRow(6);
 }
 function printReport() {
   go('relatorios');
   window.print();
+}
+
+// ────────────────────────────────────────────────────────────
+// 9A. COMPROVANTES TÉRMICOS NÃO FISCAIS — PAPEL 58 MM
+// O navegador abre a impressão do Windows / Android; não envia ESC/POS
+// diretamente à impressora Bluetooth, pois isso depende do modelo/driver.
+// ────────────────────────────────────────────────────────────
+function showReceiptModal(saleId) {
+  const sale=db.sales.find(s=>s.id===saleId);
+  if(!sale)return;
+  lastReceiptSaleId=saleId;
+  $('receiptSaleText').textContent=`Venda ${sale.id.slice(0,8).toUpperCase()} • ${formatDateTime(sale.date)} • ${money(sale.total)}. Selecione a via que deseja imprimir.`;
+  $('receiptOverlay').hidden=false;
+}
+function hideReceiptModal(){
+  $('receiptOverlay').hidden=true;
+  lastReceiptSaleId=null;
+}
+function receiptMarkup(sale,via) {
+  const lines=(sale.items||[]).map(item=>{
+    const qty=Number(item.qty)||0,price=Number(item.price)||0;
+    return `<div class="receipt-item"><div class="receipt-item-name">${esc(item.name)}</div><div class="receipt-line"><span>${qty} × ${money(price)}</span><span>${money(qty*price)}</span></div></div>`;
+  }).join('');
+  const cash=sale.payment==='Dinheiro';
+  const change=cash?fromCents(toCents(sale.received)-toCents(sale.total)):0;
+  const canceled=sale.voided?'<div class="receipt-center"><strong>*** VENDA CANCELADA ***</strong></div>':'';
+  return `<article class="receipt-ticket">
+      <header class="receipt-center"><h3>${esc(db.settings.name||'Minha Papelaria')}</h3>
+      ${db.settings.address?`<p>${esc(db.settings.address)}</p>`:''}
+      ${db.settings.phone?`<p>Contato: ${esc(db.settings.phone)}</p>`:''}
+      <p><b>COMPROVANTE NÃO FISCAL</b></p>
+      <p><b>${via==='loja'?'VIA DA LOJA':'VIA DO CLIENTE'}</b></p></header>
+      <hr class="receipt-divider">
+      ${canceled}
+      <div class="receipt-muted">Venda: ${esc(sale.id.slice(0,8).toUpperCase())}</div>
+      <div class="receipt-muted">Data: ${esc(formatDateTime(sale.date))}</div>
+      <hr class="receipt-divider">
+      ${lines}
+      <hr class="receipt-divider">
+      <div class="receipt-line"><span>Subtotal:</span><span>${money(sale.subtotal)}</span></div>
+      <div class="receipt-line"><span>Desconto:</span><span>− ${money(sale.discount)}</span></div>
+      <div class="receipt-line"><strong>TOTAL:</strong><strong>${money(sale.total)}</strong></div>
+      <div class="receipt-line"><span>Pagamento:</span><span>${esc(sale.payment||'Outro')}</span></div>
+      ${cash?`<div class="receipt-line"><span>Recebido:</span><span>${money(sale.received)}</span></div><div class="receipt-line"><span>Troco:</span><span>${money(change)}</span></div>`:''}
+      ${sale.note?`<hr class="receipt-divider"><div class="receipt-muted">Obs.: ${esc(sale.note)}</div>`:''}
+      <hr class="receipt-divider">
+      <footer class="receipt-center"><p>Obrigado pela preferência!</p><p>Impresso pelo Papelaria Manager</p></footer>
+    </article>`;
+}
+let receiptPrintTimer=null;
+function cleanupReceiptPrint(){
+  document.body.classList.remove('printing-receipt');
+  $('receiptPageStyle')?.remove();
+  clearTimeout(receiptPrintTimer);
+}
+function printReceipt(saleId,via='cliente'){
+  const sale=db.sales.find(s=>s.id===saleId);
+  if(!sale)return toast('Venda não encontrada no histórico.');
+  const chosen=via==='ambas'?['cliente','loja']:[via];
+  if(!chosen.every(v=>['cliente','loja'].includes(v)))return;
+  const paper=$('receiptPaper');
+  paper.innerHTML=chosen.map(item=>receiptMarkup(sale,item)).join('');
+  // Ajusta o comprimento da folha conforme o texto, evitando desperdício
+  // de uma folha A4 na impressora térmica. O driver deve usar papel 58 mm.
+  const heightMm=Math.max(60,Math.min(1600,Math.ceil(paper.scrollHeight*25.4/96+8)));
+  cleanupReceiptPrint();
+  const style=document.createElement('style');
+  style.id='receiptPageStyle';
+  style.textContent=`@media print{@page{size:58mm ${heightMm}mm;margin:0}}`;
+  document.head.append(style);
+  document.body.classList.add('printing-receipt');
+  window.addEventListener('afterprint',cleanupReceiptPrint,{once:true});
+  try {window.print();}catch(error){cleanupReceiptPrint();toast('Não foi possível abrir a impressão: '+error.message);}
+  // Fallback caso o navegador não emita afterprint.
+  receiptPrintTimer=setTimeout(cleanupReceiptPrint,30000);
 }
 
 // ────────────────────────────────────────────────────────────
@@ -544,6 +621,15 @@ function bind() {
   });
   ['reportDay','reportMonth'].forEach(id=>$(id).addEventListener('change',renderReports));
   $('printReport').addEventListener('click',printReport);
+  $('exportExcelReport').addEventListener('click',()=>exportExcelPeriod(selectedPeriod()));
+  $('exportExcelAll').addEventListener('click',()=>exportExcelPeriod({type:'all',value:''}));
+  $('printCustomerReceipt').addEventListener('click',()=>printReceipt(lastReceiptSaleId,'cliente'));
+  $('printStoreReceipt').addEventListener('click',()=>printReceipt(lastReceiptSaleId,'loja'));
+  $('printBothReceipts').addEventListener('click',()=>printReceipt(lastReceiptSaleId,'ambas'));
+  $('exportLastSaleExcel').addEventListener('click',()=>exportExcelSale(lastReceiptSaleId));
+  $('closeReceiptModal').addEventListener('click',hideReceiptModal);
+  $('doneReceipt').addEventListener('click',hideReceiptModal);
+  $('receiptOverlay').addEventListener('click',event=>{if(event.target===$('receiptOverlay'))hideReceiptModal();});
   $('closeModal').addEventListener('click',closeModal);
   $('cancelModal').addEventListener('click',closeModal);
   $('modalOverlay').addEventListener('click',event=>{if(event.target===$('modalOverlay'))closeModal();});
@@ -556,7 +642,8 @@ function bind() {
   });
   document.addEventListener('keydown',event=>{
     if(event.key==='Escape'){
-      if(!$('modalOverlay').hidden)closeModal();
+      if(!$('receiptOverlay').hidden)hideReceiptModal();
+      else if(!$('modalOverlay').hidden)closeModal();
       else if(document.body.classList.contains('pdv-focus')){$('focusPdv').click();}
     }
   });
@@ -570,6 +657,8 @@ function bind() {
     if(kind==='delete')deleteEntity(entityKind,id);
     if(kind==='pay'){const employee=db.employees.find(e=>e.id===id);if(employee)movementModal(employee);}
     if(kind==='void-sale')cancelSale(id);
+    if(kind==='receipt-client')printReceipt(id,'cliente');
+    if(kind==='receipt-store')printReceipt(id,'loja');
     if(kind==='void-movement')voidMovement(id);
   });
 }

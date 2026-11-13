@@ -1,108 +1,70 @@
-# Papelaria Manager 1.2 — Dev Kayko
+# Papelaria Manager 1.3 — Dev Kayko
 
-Sistema local para papelarias e gráficas rápidas. Funciona no GitHub Pages com **HTML, CSS e JavaScript puros**, sem servidor, sem banco de dados externo e sem mensalidade de hospedagem.
+Sistema para papelarias e gráficas rápidas, que funciona em **GitHub Pages**, usando HTML, CSS e JavaScript locais. Não exige servidor, conta, biblioteca online ou assinatura.
 
-## Novidades da versão 1.2
+## Novidade 1.3 — comprovante térmico 58 mm + Excel de verdade
 
-- Vendas efetivamente registradas no histórico, visíveis no painel e nos relatórios, mesmo após recarregar o navegador.
-- Data e hora locais nos relatórios: corrigido problema em que vendas feitas à noite no Brasil podiam aparecer no dia seguinte por conta de horários UTC.
-- Registro dos produtos e serviços vendidos, com quantidade e valor bruto no relatório.
-- Entradas e saídas financeiras, saldos positivos ou negativos do **dia** e do **mês**.
-- Metas de faturamento diário e mensal, com barra de progresso, porcentagem e valor restante.
-- Modo claro e escuro, com preferência guardada no navegador.
-- PDV otimizado para a altura da tela no computador; listas do catálogo e carrinho usam rolagem própria. Botão **Tela expandida** esconde menus para oferecer ainda mais espaço.
-- Fechamento de caixa com dinheiro esperado, dinheiro contado, diferença e **backup JSON automático ao confirmar**.
-- Cancelamento de vendas e lançamentos mantendo o histórico, sem contar nos totais.
-- Impressão do resumo, itens, vendas, movimentações e fechamentos; o navegador oferece **Salvar como PDF**.
+### Comprovante para cliente e loja
 
-## Arquivos e onde editar
+1. Abra a **Frente de caixa**, abra o caixa, registre uma venda.
+2. Ao finalizar, surge **Venda registrada** com três opções: **Via do cliente (58 mm)**, **Via da loja (58 mm)** ou **Imprimir as duas vias**.
+3. Selecione sua impressora térmica na janela de impressão do navegador e ajuste para **papel de 58 mm** (sem margens, preferencialmente).
+4. Reimprima quando quiser em **Relatórios e histórico → Vendas registradas → Via cliente / Via loja**. As vendas canceladas continuam identificadas como canceladas no papel.
+
+O comprovante contém: nome e contato do estabelecimento, número da venda, data e horário, tipo de via, itens, quantidade, valores, desconto, total, forma de pagamento e troco quando for dinheiro, além da indicação **COMPROVANTE NÃO FISCAL**. A largura do documento é 58 mm, com conteúdo útil de 54 mm.
+
+**IMPORTANTE SOBRE A IMPRESSORA BLUETOOTH:** o site **não** envia comandos ESC/POS diretamente ao Bluetooth, pois isso depende do protocolo e driver do modelo. O botão chama a janela de impressão do navegador (`window.print()`). Na maioria das situações você precisa **emparelhar e instalar a impressora no Windows/Android** com driver ou aplicativo compatível; ela deverá aparecer na lista de impressoras. Se o seu modelo só imprime pelo próprio aplicativo e não aparece como impressora do sistema, poderá ser necessário usar **Salvar como PDF → compartilhar com o app da impressora**. Teste uma venda de baixo valor antes de atender clientes. A impressão não substitui cupom fiscal, NFC-e ou nota fiscal.
+
+### Registro em Excel `.xlsx` (sem internet extra)
+
+- **Relatórios e histórico** → escolha **Dia** ou **Mês**, informe data e clique em **Exportar Excel (.xlsx)**.
+- **Configurações** → **Histórico completo para Excel (.xlsx)** baixa todos os períodos.
+- Após cada venda → **Registrar esta venda no Excel** baixa a planilha individual da venda.
+- O Excel do período traz abas: **Resumo, Vendas, Itens vendidos, Movimentações, Entradas, Saídas, Fechamentos e Estoque atual**. Os valores monetários são números de verdade, formatados em reais, para permitir somar, filtrar e criar gráficos.
+- Vendas canceladas e lançamentos cancelados ficam identificados como **CANCELADA/CANCELADO**, e não integram o saldo operacional do resumo.
+- Salários pagos via Financeiro aparecem nas movimentações e saídas. Os cadastros salariais dos funcionários não são incluídos na planilha.
+
+**O Excel não é editado automaticamente no computador:** por segurança, um website estático não tem permissão para atualizar um `.xlsx` existente na pasta Downloads. Você baixa **uma cópia atualizada** sempre que exportar. Continue registrando as vendas no site e exporte **ao fechar o dia** (ou mês). **Arquivo XLSX não é backup:** mantenha também o JSON com todos os dados, para restaurar o sistema.
+
+### O que já existia na versão 1.2
+
+- PDV compacto para desktop, com catálogo por nome/código/categoria, teclado numérico e carrinho; venda atualiza o estoque.
+- Registro de vendas, serviços, itens, descontos, formas de pagamento e troco.
+- Entradas, saídas, salários, metas, saldo operacional diário e mensal.
+- Fechamento com contagem de caixa, diferença entre o valor contado e o esperado, impressão A4/PDF.
+- Tema claro/escuro, backup/restauração JSON, histórico de cancelamentos.
+
+## Organização dos códigos
 
 ```text
 papelaria-manager/
-├── index.html           ← Menus, formulários e estrutura das telas
+├── index.html          # estrutura de telas, botões, janelas de comprovante
 ├── css/
-│   └── style.css        ← Layout, modo escuro, cores e impressão
+│   └── style.css       # layout do PDV, cores, @media print 58 mm e A4
 ├── js/
-│   ├── data.js          ← Armazenamento local, backup e dados iniciais
-│   └── app.js           ← Operação do caixa, metas, relatórios e interface
-└── README.md            ← Este manual
+│   ├── data.js         # banco local e backup; DB_KEY compatível com 1.2
+│   ├── excel.js        # GERADOR XLSX local, relatórios Excel por período
+│   └── app.js          # vendas, recibos, cálculos, relatórios e interações
+└── README.md
 ```
 
-### Editar com facilidade
+Para editar o nome do estabelecimento, use **Configurações**. Para ajustar os textos, procure no `index.html`. Para mudar impressão térmica/recibo, edite `receiptMarkup` e `printReceipt` em `js/app.js` e as classes `.receipt-*` em `css/style.css`. Para configurar as abas do Excel, edite `excelSheetData` em `js/excel.js`. Não mude `DB_KEY` em `js/data.js`: isso mantém os dados da v1.2 no mesmo navegador e endereço.
 
-- **Nome, telefone, endereço:** Configurações, dentro do próprio sistema.
-- **Serviços, categorias e preços:** Serviços → Novo serviço / Editar.
-- **Produtos, códigos e estoque:** Produtos e estoque → Novo produto / Editar.
-- **Metas:** Metas → meta diária / meta mensal.
-- **Cor e estilo:** variáveis CSS no topo de `css/style.css` (`--primary`, `--bg`, `--surface` etc.).
-- **Serviços iniciais exibidos no primeiro acesso:** constante `INITIAL_SERVICES` em `js/data.js`.
-- **Regras de negócios e funções:** `js/app.js` dividido em 10 seções comentadas.
+## Publicar / atualizar GitHub Pages
 
-> Atenção: editar `INITIAL_SERVICES` não muda automaticamente os serviços já armazenados. Depois do primeiro acesso, use o cadastro da tela Serviços para alterar preços.
+1. **Antes da atualização:** faça um **Backup JSON** da versão atual e guarde-o fora do navegador.
+2. Baixe o ZIP desta versão 1.3, descompacte e substitua `index.html`, `README.md`, `css/style.css`, `js/app.js` e `js/data.js`. **Adicione** também o novo `js/excel.js`.
+3. Envie tudo ao repositório GitHub, mantendo as pastas.
+4. Confirme que GitHub → **Settings → Pages** está com `Deploy from a branch` / `main` / `/(root)`.
+5. Abra a URL do projeto e faça `Ctrl + F5` caso seu navegador mostre a versão antiga.
+6. Registre uma **venda de teste**, confira a impressão e exporte o Excel para confirmar o ambiente de sua impressora.
 
-## Como publicar no GitHub Pages
+## Limites de uso do GitHub Pages
 
-1. Crie ou abra um repositório no GitHub.
-2. Envie `index.html`, `README.md` e as pastas `css/` e `js/`.
-3. Abra **Settings → Pages**.
-4. Em **Build and deployment**, selecione **Deploy from a branch**.
-5. Escolha a branch **main**, pasta **/ (root)** e clique em **Save**.
-6. Abra `https://SEU-USUARIO.github.io/NOME-DO-REPOSITORIO/` (ou o endereço do Pages indicado pelo GitHub).
+Os dados de vendas ficam apenas no `localStorage` **do navegador e endereço atuais**. Não são gravados no GitHub nem sincronizados entre computadores. Faça backup JSON diariamente. O Excel gera um relatório manual, não sincronização simultânea, nem substitui a emissão de documentos fiscais. Não armazene dados pessoais sensíveis de clientes ou funcionários em um computador compartilhado sem proteção.
 
-Se já tinha a versão 1.0/1.1 no mesmo endereço, envie os novos arquivos **substituindo os antigos**, não renomeie `js/data.js` e `js/app.js` ao subir. Se o navegador mostrar a versão anterior, recarregue com `Ctrl + F5`.
+### Verificações feitas
 
-## Como operar
+Validações em Chromium: venda de produto e serviço, atualização de estoque, modal de impressão, duas vias, impressão posterior pelo histórico, tema escuro, geração das planilhas `.xlsx` por período e por venda, estrutura ZIP/XML do Excel, importação do `.xlsx` com `artifact_tool` e backup JSON. **Não foi possível testar fisicamente sua impressora Bluetooth sem o modelo e o dispositivo.**
 
-### Registrar uma venda
-
-1. Clique em **Frente de caixa → Abrir caixa**, informando o dinheiro inicial.
-2. Pesquise o serviço/produto, escolha quantidade e clique no botão do catálogo.
-3. Confira os itens no carrinho e aplique desconto, se houver.
-4. Selecione forma de pagamento; em dinheiro, informe o recebido para calcular o troco.
-5. Clique em **Concluir e registrar venda**.
-6. Uma confirmação aparece e a venda é salva **junto com** a baixa do estoque do produto.
-7. Consulte **Relatórios e histórico → Dia / Mês** para visualizar o que foi vendido.
-
-**Dica:** uma venda só entra nos totais depois de clicar em **Concluir e registrar venda**, com um caixa aberto. Apenas adicionar ao carrinho não registra uma venda.
-
-### Fechar o expediente
-
-1. Clique em **Fechar caixa e backup** na frente de caixa.
-2. Confira o resumo de dinheiro, pagamentos digitais e movimentações em espécie.
-3. Digite quanto dinheiro existe fisicamente na gaveta.
-4. Confirme. O sistema grava o fechamento, **baixa o arquivo de backup JSON** e abre o relatório do dia.
-5. Clique em **Imprimir / Salvar PDF**. Na janela da impressora, escolha sua impressora ou **Salvar como PDF**.
-6. Guarde o arquivo JSON fora do computador principal (pendrive ou nuvem privada).
-
-### Resultado positivo ou negativo
-
-**Saldo operacional = total de vendas não canceladas + outras entradas não canceladas − saídas registradas.**
-
-- Positivo: as entradas registradas foram maiores que as saídas registradas.
-- Negativo: as saídas registradas foram maiores que as entradas registradas.
-
-**Isso não é lucro contábil.** Taxas de cartão, impostos, custo de mercadorias, investimentos e despesas ainda não registradas podem alterar o resultado real. Registre seus custos e despesas corretamente.
-
-### Metas
-
-Na tela **Metas**, configure valores de faturamento do dia e do mês. A meta usa somente o valor das vendas concluídas e não canceladas. Não inclui entradas extras do financeiro. Preencha `0` para desativar.
-
-## Backup, atualização e segurança
-
-- Os dados ficam em `localStorage` no navegador, usando a **mesma chave da versão anterior**: `devkayko_papelaria_v1`.
-- **Antes de atualizar**, faça um backup da versão atual pelo botão Backup. Assim você tem uma cópia dos dados caso ocorra qualquer erro.
-- Depois da atualização, as vendas antigas devem continuar disponíveis no **mesmo navegador e mesmo endereço de site**.
-- A versão 1.2 carrega arquivos de backup compatíveis com a versão 1.0/1.1. Os novos campos de metas/tema são preenchidos automaticamente quando não existirem.
-- **Restaurar backup substitui o armazenamento atual**. Confirme apenas se quiser substituir os dados existentes.
-- O GitHub Pages **não armazena** vendas, caixa ou salários. Mudança de dispositivo, domínio ou endereço do site não sincroniza dados. Para transferir, faça backup e restaure no novo endereço.
-- Não use navegação anônima; não limpe cookies/dados do site; mantenha cópias do backup em local seguro.
-- O aplicativo não possui login, controle de acesso, operação simultânea entre computadores ou integração fiscal; **não substitui uma solução contábil/fiscal oficial**.
-- `localStorage` possui limite de espaço no navegador. Se o volume de vendas for muito grande, será preciso migrar para um banco de dados com autenticação, backups e permissões.
-
-## Verificação
-
-A versão foi verificada em navegador Chromium para: cadastro de produto, venda de produto e serviço, persistência, data local brasileira, atualização do estoque, relatório diário, metas, mudança de tema, despesas, resultado negativo, backup, fechamento, impressão e cancelamento.
-
----
-
-© 2026 Papelaria Manager · **Desenvolvido por Dev Kayko**
+© 2026 Papelaria Manager — **Desenvolvido por Dev Kayko**
