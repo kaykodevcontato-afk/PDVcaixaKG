@@ -176,7 +176,7 @@ footer{font-size:.72rem;color:var(--muted);text-align:center;padding:14px}
 body.pdv-focus .main-wrap{width:100%}
 @media(min-width:901px){body.pdv-focus .pdv-grid{grid-template-columns:minmax(220px,1.16fr) minmax(200px,.86fr) minmax(270px,.92fr)}}
 
-/* ── 8. PERFIS E LOGIN (VERSÃO 1.5) ── */
+/* ── 8. PERFIS E LOGIN (VERSÃO 1.6) ── */
 body.login-locked .shell{visibility:hidden;pointer-events:none}
 .login-overlay{z-index:140;background:linear-gradient(130deg,#061326e8,#0a2651ed);backdrop-filter:blur(9px)}
 .login-modal{max-width:465px;text-align:center;padding:29px 30px 23px;box-shadow:0 30px 95px #0005}
@@ -198,6 +198,6 @@ body.role-operator #page-caixa{max-width:none}
 body.role-operator:not(.pdv-mode) .main-wrap{min-height:100dvh}
 body.role-operator .pdv-toolbar #pdvSwitchUser{display:inline-block}
 @media(max-width:610px){.login-modal{padding:22px 17px}.topbar #switchUser{font-size:.69rem;padding:8px}.topbar .user-role-chip{font-size:.63rem}}
-@media print{.login-overlay,.operator-panel,#operatorSecurityOverlay,.user-role-chip,#switchUser,#pdvSwitchUser{display:none!important}}
+@media print{.login-overlay,.cash-access-panel,#cashAccessOverlay,.user-role-chip,#switchUser,#pdvSwitchUser{display:none!important}}
 
 .pdv-profile{font-size:.7rem;display:inline-flex;vertical-align:middle;padding:5px 8px;color:var(--primary);background:var(--primary-soft);border-radius:30px;font-weight:800;white-space:nowrap}

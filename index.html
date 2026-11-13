@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#1857bf">
   <meta name="description" content="Papelaria Manager: PDV, histórico, estoque, metas e fechamento de caixa. Criado por Dev Kayko.">
-  <title>Papelaria Manager 1.5 | Dev Kayko</title>
+  <title>Papelaria Manager 1.6 | Dev Kayko</title>
   <link rel="stylesheet" href="css/style.css">
   <script defer src="js/data.js"></script>
   <script defer src="js/security.js"></script>
@@ -18,7 +18,7 @@
   <aside class="sidebar" id="sidebar">
     <div class="brand">
       <span class="brand-icon">P</span>
-      <span class="brand-copy"><strong id="brandName">Papelaria Manager</strong><small>GESTÃO LOCAL • V1.5</small></span>
+      <span class="brand-copy"><strong id="brandName">Papelaria Manager</strong><small>GESTÃO LOCAL • V1.6</small></span>
     </div>
     <nav aria-label="Menu principal" id="navigation">
       <button class="nav-item active" data-page="inicio" title="Visão geral"><span class="nav-icon">▦</span><span>Visão geral</span></button>
@@ -114,15 +114,15 @@
       <!-- 09 — CONFIGURAÇÕES E BACKUP -->
       <section class="page" id="page-configuracoes"><div class="section-head"><div><h2>Configurações e segurança</h2><p>Personalize o negócio e faça cópias de segurança dos dados.</p></div></div><div class="two-col"><div class="panel"><h3>Dados da papelaria</h3><form id="settingsForm" class="stack-form"><label>Nome da papelaria<input id="settingName" required maxlength="70"></label><label>Telefone<input id="settingPhone" maxlength="30"></label><label>Endereço<input id="settingAddress" maxlength="150"></label><button class="btn btn-primary" type="submit">Salvar informações</button></form></div><div class="panel"><h3>Backup e restauração</h3><p>O arquivo JSON salva vendas, histórico, produtos, estoque, movimentações, metas e fechamentos.</p><div class="button-stack"><button class="btn btn-primary" id="exportBackup">↓ Baixar backup JSON</button><button class="btn btn-secondary" id="exportExcelAll">▦ Histórico completo para Excel (.xlsx)</button><label class="btn btn-secondary upload-label">↑ Restaurar backup<input type="file" id="importBackup" accept=".json,application/json" hidden></label></div><small id="lastBackupText"></small><p class="hint">Restaurar substitui os dados deste navegador. Guarde o arquivo em outro local.</p><p class="hint">O Excel é uma cópia para consulta e arquivo, não um banco sincronizado. Exporte novamente após novas vendas.</p></div></div><div class="panel top-gap security-panel">
           <div class="panel-head"><h3>🔐 Senha do dono</h3><span class="pill" id="securityStatus">Não configurada</span></div>
-          <p>A senha do dono libera todos os menus e autoriza ações administrativas. Na atualização, sua senha antiga do caixa continua sendo a senha do dono. O caixa também pede senha para abrir, fechar e sair da tela expandida.</p>
+          <p>A senha do dono libera o painel administrativo. A senha operacional do caixa é separada e usada para abrir/fechar o atendimento. O funcionário entra no PDV sem senha de login.</p>
           <button type="button" id="changeCashPassword" class="btn btn-secondary">Alterar senha do dono</button>
           <p class="hint">Não é login de servidor: usuários com acesso ao armazenamento do navegador podem modificar os dados. Se perder a senha, não há recuperação automática. Guarde seus backups em local seguro; eles contêm o verificador de senha.</p>
         </div>
-        <div class="panel top-gap operator-panel">
-          <div class="panel-head"><h3>👤 Acesso dos funcionários — somente PDV</h3><span id="operatorSecurityStatus" class="pill">Desativado</span></div>
-          <p>Crie uma senha diferente para os funcionários. Eles poderão usar <b>apenas o PDV</b>, registrar vendas e emitir comprovantes. Estoque, serviços, salários, financeiro, metas, histórico, relatórios, Excel, backups e configurações ficam no perfil do dono.</p>
-          <div class="action-row"><button type="button" id="changeOperatorPassword" class="btn btn-primary">Criar / alterar senha do funcionário</button><button type="button" id="disableOperatorPassword" class="btn btn-danger">Desativar acesso do funcionário</button></div>
-          <p class="hint">Se o funcionário fechar o caixa, o registro será salvo; somente o dono poderá abrir os relatórios e gerar o backup. Troque de usuário para liberar o painel completo com a senha do dono.</p>
+        <div class="panel top-gap cash-access-panel">
+          <div class="panel-head"><h3>🧾 Funcionário e senha do caixa</h3><span id="cashAccessStatus" class="pill">Configure a senha do caixa</span></div>
+          <p>O funcionário <b>entra no PDV sem senha de login</b> e pode vender e imprimir comprovantes. Para <b>abrir, fechar ou desbloquear o caixa</b>, informa a senha operacional configurada aqui. Ela é <b>diferente da senha do dono</b>.</p>
+          <button type="button" id="configureCashPassword" class="btn btn-primary">Criar senha do caixa</button>
+          <p class="hint">Somente o dono pode configurar a senha do caixa. O funcionário não acessa produtos, salários, financeiro, relatórios, Excel, backups ou configurações.</p>
         </div>
         <div class="panel top-gap"><h3>Armazenamento e limitações</h3><p>O GitHub Pages hospeda apenas o site; não recebe dados da papelaria. Os registros ficam neste navegador. Não use modo anônimo e não limpe os dados do site. Os perfis são uma restrição de interface local, não autenticação segura de servidor: quem tem acesso ao navegador e às ferramentas de desenvolvimento pode consultar ou alterar o armazenamento. Para proteção real de salários e finanças, use banco de dados com permissões e login no servidor.</p></div></section>
     </main>
@@ -149,10 +149,10 @@
 <div id="loginOverlay" class="modal-overlay login-overlay" role="presentation">
   <div class="modal login-modal" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
     <div class="login-emblem" aria-hidden="true">P</div>
-    <h2 id="loginTitle">Papelaria Manager</h2><p class="login-subtitle">Escolha o perfil e entre com sua senha para continuar.</p>
+    <h2 id="loginTitle">Papelaria Manager</h2><p class="login-subtitle">Escolha o perfil. Funcionário entra sem senha; dono usa senha.</p>
     <div class="login-role-picker" role="group" aria-label="Perfil de acesso">
       <button type="button" class="login-role selected" id="loginOwner" aria-pressed="true"><strong>👑 Dono</strong><small>Acesso completo</small></button>
-      <button type="button" class="login-role" id="loginOperator" aria-pressed="false"><strong>🧾 Funcionário</strong><small>Somente PDV</small></button>
+      <button type="button" class="login-role" id="loginOperator" aria-pressed="false"><strong>🧾 Funcionário</strong><small>PDV sem senha de login</small></button>
     </div>
     <form id="loginForm" autocomplete="off" class="stack-form">
       <p id="loginHelp" class="login-help">Informe sua senha para acessar o sistema.</p>
@@ -164,22 +164,22 @@
     <p class="login-footer">Acesso local • Dados neste navegador • Desenvolvido por <b>Dev Kayko</b></p>
   </div>
 </div>
-<!-- Configurar ou desativar senha do funcionário: requer senha do dono -->
-<div id="operatorSecurityOverlay" class="modal-overlay auth-overlay" hidden>
-  <div class="modal auth-modal" role="dialog" aria-modal="true" aria-labelledby="operatorModalTitle">
-    <div class="auth-icon" aria-hidden="true">👤</div>
-    <h3 id="operatorModalTitle">Senha do funcionário</h3>
-    <p>Somente o dono pode alterar o acesso dos operadores.</p>
-    <form id="operatorPasswordForm" class="stack-form" autocomplete="off">
-      <label>Senha do dono<input type="password" name="ownerPassword" minlength="6" maxlength="64" autocomplete="off" required></label>
-      <label class="operator-new-field">Nova senha do funcionário<input type="password" name="newPassword" minlength="6" maxlength="64" autocomplete="new-password" required></label>
-      <label class="operator-new-field">Confirmar senha do funcionário<input type="password" name="confirmPassword" minlength="6" maxlength="64" autocomplete="new-password" required></label>
-      <p id="operatorPasswordError" class="auth-error" role="alert" hidden></p>
-      <div class="modal-actions"><button type="button" id="cancelOperatorPassword" class="btn btn-secondary">Cancelar</button><button type="submit" id="saveOperatorPassword" class="btn btn-primary">Salvar</button></div>
+<!-- Configurar senha operacional de abrir/fechar caixa: só pelo dono -->
+<div id="cashAccessOverlay" class="modal-overlay auth-overlay" hidden>
+  <div class="modal auth-modal" role="dialog" aria-modal="true" aria-labelledby="cashAccessTitle">
+    <div class="auth-icon" aria-hidden="true">🔐</div>
+    <h3 id="cashAccessTitle">Senha operacional do caixa</h3>
+    <p>Configure uma senha para abrir, fechar e desbloquear o caixa. O funcionário continuará entrando no PDV sem senha.</p>
+    <form id="cashAccessForm" class="stack-form" autocomplete="off">
+      <label>Confirmar senha do dono<input type="password" name="ownerPassword" minlength="6" maxlength="64" autocomplete="off" required></label>
+      <label>Nova senha do caixa<input type="password" name="newPassword" minlength="6" maxlength="64" autocomplete="new-password" required placeholder="Mínimo 6 caracteres"></label>
+      <label>Confirmar senha do caixa<input type="password" name="confirmPassword" minlength="6" maxlength="64" autocomplete="new-password" required></label>
+      <p id="cashAccessError" class="auth-error" role="alert" hidden></p>
+      <div class="modal-actions"><button type="button" id="cancelCashAccess" class="btn btn-secondary">Cancelar</button><button type="submit" id="saveCashAccess" class="btn btn-primary">Salvar senha do caixa</button></div>
     </form>
   </div>
 </div>
-<!-- Senha solicitada no primeiro uso, na abertura, fechamento e saída do PDV -->
+<!-- Senha do caixa para abrir/fechar/desbloquear; senha do dono para sair da área restrita -->
 <div id="securityOverlay" class="modal-overlay auth-overlay" hidden>
   <div class="modal auth-modal" role="dialog" aria-modal="true" aria-labelledby="securityModalTitle" aria-describedby="securityModalDescription">
     <div class="auth-icon" aria-hidden="true">🔐</div>

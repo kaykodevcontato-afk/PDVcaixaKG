@@ -1,5 +1,5 @@
 /*
- * Papelaria Manager 1.5 — Dev Kayko
+ * Papelaria Manager 1.6 — Dev Kayko
  * Navegação, PDV, financeiro, metas, relatórios e interface.
  * Dados e backups: veja js/data.js
  * Layout e cores: veja css/style.css
@@ -346,25 +346,29 @@ function requestCashPassword(action,details={}){
   if(!Access.isLoggedIn())return;
   if(action==='change'&&!Access.requireOwner())return;
   if(!$('securityOverlay').hidden)return;
-  authRequest={action,...details};
   const setup=!db.security;
   const change=action==='change';
+  if(action!=='change' && !db.cashSecurity && action!=='exit'){
+    toast('A senha do caixa ainda não foi configurada. Peça ao dono para criá-la em Configurações.');
+    return;
+  }
+  authRequest={action,...details};
   const titles={open:'Abrir caixa',close:'Fechar caixa',exit:'Sair da tela expandida',resume:'Desbloquear caixa',change:setup?'Criar senha do dono':'Alterar senha do dono'};
   const descriptions={
     open:'Informe o saldo inicial e confirme a senha antes de começar o atendimento.',
     close:'O fechamento exige senha e conferência do valor contado na gaveta.',
     exit:'Somente o dono pode sair do PDV do funcionário e abrir os demais menus. Informe a senha do dono. O caixa continuará aberto.',
-    resume:'Caixa em andamento. Informe a senha para voltar ao PDV. O navegador pode sair da tela cheia ao pressionar Esc.',
+    resume:'Caixa em andamento. Informe a senha operacional do caixa para voltar ao PDV.',
     change:'Esta senha é exclusiva do dono e libera todo o painel administrativo.'
   };
-  $('securityModalTitle').textContent=(setup?'Primeiro uso • ':'')+titles[action];
-  $('securityModalDescription').textContent=(setup && action!=='change'?'Crie uma senha de pelo menos 6 caracteres. Ela será usada neste dispositivo. ':'')+descriptions[action];
+  $('securityModalTitle').textContent=titles[action];
+  $('securityModalDescription').textContent=descriptions[action];
   let fields='';
   if(change&&db.security)fields+='<label>Senha atual<input name="oldPass" type="password" minlength="6" maxlength="64" autocomplete="current-password" required></label>';
   if(setup||change){
     fields+='<label>Nova senha<input name="newPass" type="password" minlength="6" maxlength="64" autocomplete="new-password" required placeholder="Mínimo de 6 caracteres"></label>';
     fields+='<label>Confirmar nova senha<input name="confirmPass" type="password" minlength="6" maxlength="64" autocomplete="new-password" required></label>';
-  }else fields+=`<label>${action==='exit'?'Senha do dono':Access.isOwner()?'Senha do dono':'Senha do funcionário'}<input name="password" type="password" maxlength="64" autocomplete="off" required placeholder="Digite sua senha"></label>`;
+  }else fields+=`<label>${action==='exit'?'Senha do dono':'Senha operacional do caixa'}<input name="password" type="password" maxlength="64" autocomplete="off" required placeholder="Digite sua senha"></label>`;
   if(action==='open')fields+='<label>Saldo inicial em dinheiro (R$)<input name="opening" type="number" min="0" step="0.01" value="0" required inputmode="decimal"></label>';
   if(action==='close'){
     const total=sessionTotals(activeSession());
@@ -425,12 +429,13 @@ async function submitCashPassword(event){
   const request={...authRequest};
   const form=new FormData($('securityForm'));
   try{
-    const creating=!db.security;
+    const creating=false;
     const changing=request.action==='change';
     let securityRecord=null;
     if(creating||changing){
       const password=String(form.get('newPass')||'');
       if(password!==String(form.get('confirmPass')||''))throw Error('As duas senhas não conferem.');
+      if(db.cashSecurity && await CashSecurity.verify(password,db.cashSecurity))throw Error('A senha do dono deve ser diferente da senha do caixa.');
       if(changing&&db.security && !(await CashSecurity.verify(String(form.get('oldPass')||''),db.security)))throw Error('Senha atual incorreta.');
       securityRecord=await CashSecurity.create(password);
     }else{
@@ -881,7 +886,7 @@ function bind() {
       if(!$('receiptOverlay').hidden)hideReceiptModal();
       else if(!$('modalOverlay').hidden)closeModal();
       else if(!$('loginOverlay').hidden){event.preventDefault();}
-      else if(!$('securityOverlay').hidden||!$('operatorSecurityOverlay').hidden){event.preventDefault();}
+      else if(!$('securityOverlay').hidden||!$('cashAccessOverlay').hidden){event.preventDefault();}
       else if(document.body.classList.contains('pdv-focus')){event.preventDefault();if(activeSession())requestCashPassword('exit');else $('focusPdv').click();}
     }
   });
@@ -920,7 +925,7 @@ function clearSensitiveScreen(){
 }
 Access.init({
   onLogin:role=>{
-    operatorUnlocked=true; // A própria entrada já confirmou a senha do perfil.
+    operatorUnlocked=true; // Funcionário entra no PDV sem senha; abrir/fechar exigem a senha do caixa.
     if(role==='operator')clearSensitiveScreen();
     const cash=activeSession();
     go(cash?'caixa':role==='owner'?'inicio':'caixa',true);
@@ -936,7 +941,7 @@ Access.init({
     setKioskMode(false);
     releaseBrowserFullscreen();
   },
-  onSecurityChange:()=>{render();toast('Acesso dos funcionários atualizado com sucesso.');}
+  onSecurityChange:()=>{render();toast('Senha operacional do caixa atualizada com sucesso.');}
 });
 // Atualizar a aba exige entrar novamente, mesmo com o caixa ainda aberto.
 

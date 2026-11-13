@@ -1,5 +1,5 @@
 /*
- * Papelaria Manager 1.4 — Persistência local
+ * Papelaria Manager 1.6 — Persistência local
  * A CHAVE ABAIXO É A MESMA DA VERSÃO 1.1.
  * Não mude DB_KEY se quiser preservar os dados já guardados no navegador.
  */
@@ -28,7 +28,7 @@ function freshData() {
     goals:{daily:0,monthly:0},
     ui:{theme:'light'},
     security:null, // senha antiga do caixa passa a ser senha do dono
-    operatorSecurity:null, // senha separada dos operadores, também derivada
+    cashSecurity:null, // senha operacional exclusiva para abrir, fechar e desbloquear o caixa
 
     lastBackup:null
   };
@@ -46,10 +46,14 @@ function normalizeData(data) {
     && typeof data.security.salt==='string' && typeof data.security.hash==='string'
     && Number.isSafeInteger(data.security.iterations) && data.security.iterations>=100000
     ? data.security : null;
-  data.operatorSecurity = data.operatorSecurity && typeof data.operatorSecurity==='object'
-    && typeof data.operatorSecurity.salt==='string' && typeof data.operatorSecurity.hash==='string'
-    && Number.isSafeInteger(data.operatorSecurity.iterations) && data.operatorSecurity.iterations>=100000
-    ? data.operatorSecurity : null;
+  // Migração 1.5: a antiga senha de login do funcionário passa a servir
+  // SOMENTE para abrir/fechar caixa; o login do funcionário não exige senha.
+  const validCredential=record=>record && typeof record==='object'
+    && typeof record.salt==='string' && typeof record.hash==='string'
+    && Number.isSafeInteger(record.iterations) && record.iterations>=100000;
+  data.cashSecurity = validCredential(data.cashSecurity) ? data.cashSecurity
+    : validCredential(data.operatorSecurity) ? data.operatorSecurity : null;
+  data.operatorSecurity = null; // campo antigo obsoleto; não é usado para login
   data.movements.forEach(m=>{if(typeof m.voided!=='boolean')m.voided=false;});
   return data;
 }
