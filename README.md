@@ -1,58 +1,108 @@
-# Papelaria Manager 1.0 — Dev Kayko
+# Papelaria Manager 1.2 — Dev Kayko
 
-Sistema de gestão local de papelaria e gráfica rápida, desenvolvido em **HTML, CSS e JavaScript puro**. Pode ser publicado gratuitamente no **GitHub Pages**.
+Sistema local para papelarias e gráficas rápidas. Funciona no GitHub Pages com **HTML, CSS e JavaScript puros**, sem servidor, sem banco de dados externo e sem mensalidade de hospedagem.
 
-## Como publicar
+## Novidades da versão 1.2
 
-1. Crie um repositório no GitHub, por exemplo `papelaria-manager`.
-2. Envie `index.html`, as pastas `css` e `js`, e este `README.md` mantendo exatamente a estrutura.
-3. Em **Settings → Pages → Build and deployment → Deploy from a branch**, selecione `main` e `/ (root)` e salve.
-4. Acesse o endereço gerado pelo GitHub, normalmente `https://SEU-USUARIO.github.io/papelaria-manager/`.
+- Vendas efetivamente registradas no histórico, visíveis no painel e nos relatórios, mesmo após recarregar o navegador.
+- Data e hora locais nos relatórios: corrigido problema em que vendas feitas à noite no Brasil podiam aparecer no dia seguinte por conta de horários UTC.
+- Registro dos produtos e serviços vendidos, com quantidade e valor bruto no relatório.
+- Entradas e saídas financeiras, saldos positivos ou negativos do **dia** e do **mês**.
+- Metas de faturamento diário e mensal, com barra de progresso, porcentagem e valor restante.
+- Modo claro e escuro, com preferência guardada no navegador.
+- PDV otimizado para a altura da tela no computador; listas do catálogo e carrinho usam rolagem própria. Botão **Tela expandida** esconde menus para oferecer ainda mais espaço.
+- Fechamento de caixa com dinheiro esperado, dinheiro contado, diferença e **backup JSON automático ao confirmar**.
+- Cancelamento de vendas e lançamentos mantendo o histórico, sem contar nos totais.
+- Impressão do resumo, itens, vendas, movimentações e fechamentos; o navegador oferece **Salvar como PDF**.
 
-O sistema também abre localmente clicando em `index.html` em navegadores que permitem armazenamento local na origem `file://`, mas recomenda-se sempre abrir pelo GitHub Pages para comportamento mais consistente.
+## Arquivos e onde editar
 
-## Organização
+```text
+papelaria-manager/
+├── index.html           ← Menus, formulários e estrutura das telas
+├── css/
+│   └── style.css        ← Layout, modo escuro, cores e impressão
+├── js/
+│   ├── data.js          ← Armazenamento local, backup e dados iniciais
+│   └── app.js           ← Operação do caixa, metas, relatórios e interface
+└── README.md            ← Este manual
+```
 
-- `index.html`: seções, formulários, tabelas e estrutura da página.
-- `css/style.css`: visual, cores, estilos responsivos e impressão.
-- `js/data.js`: dados iniciais dos serviços, salvamento local, exportação e importação JSON.
-- `js/app.js`: lógica do caixa, estoque, cadastros, financeiro e relatórios.
+### Editar com facilidade
 
-### Alterar preços padrão dos serviços
+- **Nome, telefone, endereço:** Configurações, dentro do próprio sistema.
+- **Serviços, categorias e preços:** Serviços → Novo serviço / Editar.
+- **Produtos, códigos e estoque:** Produtos e estoque → Novo produto / Editar.
+- **Metas:** Metas → meta diária / meta mensal.
+- **Cor e estilo:** variáveis CSS no topo de `css/style.css` (`--primary`, `--bg`, `--surface` etc.).
+- **Serviços iniciais exibidos no primeiro acesso:** constante `INITIAL_SERVICES` em `js/data.js`.
+- **Regras de negócios e funções:** `js/app.js` dividido em 10 seções comentadas.
 
-Abra `js/data.js` e edite a lista `INITIAL_SERVICES` **antes de usar pela primeira vez**. Depois do primeiro acesso, os preços passam a ser alterados na aba **Serviços**. A lista inicial não substitui os dados existentes.
+> Atenção: editar `INITIAL_SERVICES` não muda automaticamente os serviços já armazenados. Depois do primeiro acesso, use o cadastro da tela Serviços para alterar preços.
 
-## Recursos
+## Como publicar no GitHub Pages
 
-- Caixa com abertura, saldo inicial, vendas, descontos, troco e fechamento.
-- Produtos: custo, preço, código, quantidade e alerta de estoque mínimo.
-- Serviços e preços personalizados.
-- Entradas e saídas com indicação de impacto no dinheiro do caixa.
-- Funcionários e lançamento de pagamentos como despesas.
-- Relatórios por dia ou mês com impressão/salvar PDF pelo navegador.
-- Cancelamento de venda com devolução de estoque e trilha no histórico.
-- Backup JSON e restauração manual.
+1. Crie ou abra um repositório no GitHub.
+2. Envie `index.html`, `README.md` e as pastas `css/` e `js/`.
+3. Abra **Settings → Pages**.
+4. Em **Build and deployment**, selecione **Deploy from a branch**.
+5. Escolha a branch **main**, pasta **/ (root)** e clique em **Save**.
+6. Abra `https://SEU-USUARIO.github.io/NOME-DO-REPOSITORIO/` (ou o endereço do Pages indicado pelo GitHub).
 
-## Atenção: limites da versão GitHub Pages
+Se já tinha a versão 1.0/1.1 no mesmo endereço, envie os novos arquivos **substituindo os antigos**, não renomeie `js/data.js` e `js/app.js` ao subir. Se o navegador mostrar a versão anterior, recarregue com `Ctrl + F5`.
 
-**Os dados são armazenados no `localStorage` de cada navegador e dispositivo, NÃO no GitHub.** Não há login, sincronização, controle multiusuário ou autenticação. Não use vários dispositivos para registrar vendas simultaneamente. Ao limpar dados do navegador ou usar navegação privada, pode haver perda permanente dos registros. **Baixe o backup todos os dias** (idealmente depois de fechar o caixa), mantenha cópias externas e teste a restauração em um navegador separado. Não armazene dados sensíveis de funcionários ou clientes em computadores compartilhados.
+## Como operar
 
-Relatórios demonstram movimentações registradas, **não cálculo fiscal ou contábil do lucro**. A impressão gera um relatório comum, não uma nota fiscal. Operações Pix/cartão são apenas registros manuais, sem integração bancária. Os lançamentos de entradas/saídas impactam o fechamento de caixa somente quando marcados como movimentação em espécie durante um caixa aberto. Valores de salários são dados cadastrais, e pagamentos só viram despesas ao clicar em **Pagar** e salvar o lançamento. Compras de estoque devem ser registradas manualmente em Financeiro; entrada de mercadorias deve ser ajustada em Produtos. Cancelamentos após fechar o caixa não reabrem um fechamento histórico: registre e confira os ajustes manuais no caixa seguinte.
+### Registrar uma venda
 
-## Recomendações
+1. Clique em **Frente de caixa → Abrir caixa**, informando o dinheiro inicial.
+2. Pesquise o serviço/produto, escolha quantidade e clique no botão do catálogo.
+3. Confira os itens no carrinho e aplique desconto, se houver.
+4. Selecione forma de pagamento; em dinheiro, informe o recebido para calcular o troco.
+5. Clique em **Concluir e registrar venda**.
+6. Uma confirmação aparece e a venda é salva **junto com** a baixa do estoque do produto.
+7. Consulte **Relatórios e histórico → Dia / Mês** para visualizar o que foi vendido.
 
-A operação mais segura é usar **um computador principal**, com navegador fixo e backups diários. Se precisar de vários caixas, controle de permissões, banco online ou emissão fiscal, será necessário um serviço de backend.
+**Dica:** uma venda só entra nos totais depois de clicar em **Concluir e registrar venda**, com um caixa aberto. Apenas adicionar ao carrinho não registra uma venda.
 
-**Desenvolvido por Dev Kayko.**
+### Fechar o expediente
 
+1. Clique em **Fechar caixa e backup** na frente de caixa.
+2. Confira o resumo de dinheiro, pagamentos digitais e movimentações em espécie.
+3. Digite quanto dinheiro existe fisicamente na gaveta.
+4. Confirme. O sistema grava o fechamento, **baixa o arquivo de backup JSON** e abre o relatório do dia.
+5. Clique em **Imprimir / Salvar PDF**. Na janela da impressora, escolha sua impressora ou **Salvar como PDF**.
+6. Guarde o arquivo JSON fora do computador principal (pendrive ou nuvem privada).
 
-## Atualização 1.1 — PDV rápido
+### Resultado positivo ou negativo
 
-O caixa agora possui catálogo de **serviços e produtos em botões**, pesquisa por nome/código/categoria, filtros, carrinho e teclado numérico. Toque em um botão para adicioná-lo à venda, usando a quantidade indicada.
+**Saldo operacional = total de vendas não canceladas + outras entradas não canceladas − saídas registradas.**
 
-- Clique no campo **Quantidade**, **Desconto** ou **Valor recebido** para escolher onde o teclado numérico digita.
-- Os botões refletem os preços registrados nos cadastros.
-- Edite as categorias nos formulários de **Produtos e estoque** e **Serviços**. Registros antigos sem categoria aparecem em **Geral**.
-- Personalize o visual do PDV no final de `css/style.css` e os filtros em `renderPosTiles()` dentro de `js/app.js`.
-- Os dados locais antigos continuam sendo usados: **não altere `DB_KEY`** em `js/data.js`.
-- Ao publicar, substitua todos os arquivos do projeto mantendo seus caminhos. Faça um backup do sistema antigo antes da atualização.
+- Positivo: as entradas registradas foram maiores que as saídas registradas.
+- Negativo: as saídas registradas foram maiores que as entradas registradas.
+
+**Isso não é lucro contábil.** Taxas de cartão, impostos, custo de mercadorias, investimentos e despesas ainda não registradas podem alterar o resultado real. Registre seus custos e despesas corretamente.
+
+### Metas
+
+Na tela **Metas**, configure valores de faturamento do dia e do mês. A meta usa somente o valor das vendas concluídas e não canceladas. Não inclui entradas extras do financeiro. Preencha `0` para desativar.
+
+## Backup, atualização e segurança
+
+- Os dados ficam em `localStorage` no navegador, usando a **mesma chave da versão anterior**: `devkayko_papelaria_v1`.
+- **Antes de atualizar**, faça um backup da versão atual pelo botão Backup. Assim você tem uma cópia dos dados caso ocorra qualquer erro.
+- Depois da atualização, as vendas antigas devem continuar disponíveis no **mesmo navegador e mesmo endereço de site**.
+- A versão 1.2 carrega arquivos de backup compatíveis com a versão 1.0/1.1. Os novos campos de metas/tema são preenchidos automaticamente quando não existirem.
+- **Restaurar backup substitui o armazenamento atual**. Confirme apenas se quiser substituir os dados existentes.
+- O GitHub Pages **não armazena** vendas, caixa ou salários. Mudança de dispositivo, domínio ou endereço do site não sincroniza dados. Para transferir, faça backup e restaure no novo endereço.
+- Não use navegação anônima; não limpe cookies/dados do site; mantenha cópias do backup em local seguro.
+- O aplicativo não possui login, controle de acesso, operação simultânea entre computadores ou integração fiscal; **não substitui uma solução contábil/fiscal oficial**.
+- `localStorage` possui limite de espaço no navegador. Se o volume de vendas for muito grande, será preciso migrar para um banco de dados com autenticação, backups e permissões.
+
+## Verificação
+
+A versão foi verificada em navegador Chromium para: cadastro de produto, venda de produto e serviço, persistência, data local brasileira, atualização do estoque, relatório diário, metas, mudança de tema, despesas, resultado negativo, backup, fechamento, impressão e cancelamento.
+
+---
+
+© 2026 Papelaria Manager · **Desenvolvido por Dev Kayko**

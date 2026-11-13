@@ -1,14 +1,116 @@
-/* Persistência local — altere o nome da chave apenas se desejar começar outro banco. */
-const DB_KEY='devkayko_papelaria_v1';
-const INITIAL_SERVICES=[['Impressão P&B','página',1],['Impressão colorida','página',2.5],['Xerox P&B','página',0.5],['Currículo','unidade',15],['Digitalização','página',2],['Plastificação','unidade',6],['Encadernação','unidade',8]];
-const uid=()=>globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-const freshData=()=>({version:1,settings:{name:'Minha Papelaria',phone:'',address:''},products:[],services:INITIAL_SERVICES.map(([name,unit,price])=>({id:uid(),name,unit,price})),employees:[],movements:[],sales:[],sessions:[],lastBackup:null});
-function validData(data){return data && data.version===1 && ['products','services','employees','movements','sales','sessions'].every(k=>Array.isArray(data[k])) && data.settings && typeof data.settings.name==='string' && data.products.length<100000 && data.sales.length<200000;}
-function loadData(){try{const raw=localStorage.getItem(DB_KEY);if(!raw)return freshData();const data=JSON.parse(raw);if(!validData(data))throw Error('Arquivo de dados incompatível');return data;}catch(e){alert('Não foi possível carregar os registros locais. Um conjunto temporário foi aberto. Evite salvar antes de conferir seu backup.');return freshData();}}
+/*
+ * Papelaria Manager 1.2 — Persistência local
+ * A CHAVE ABAIXO É A MESMA DA VERSÃO 1.1.
+ * Não mude DB_KEY se quiser preservar os dados já guardados no navegador.
+ */
+'use strict';
+const DB_KEY = 'devkayko_papelaria_v1';
+
+const INITIAL_SERVICES = [
+  {name:'Impressão P&B',category:'Impressão',unit:'página',price:1},
+  {name:'Impressão colorida',category:'Impressão',unit:'página',price:2.50},
+  {name:'Xerox P&B',category:'Xerox',unit:'página',price:0.50},
+  {name:'Currículo',category:'Documentos',unit:'unidade',price:15},
+  {name:'Digitalização',category:'Digitalização',unit:'página',price:2},
+  {name:'Plastificação',category:'Acabamento',unit:'unidade',price:6},
+  {name:'Encadernação',category:'Acabamento',unit:'unidade',price:8}
+];
+
+const uid = () => globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+function freshData() {
+  return {
+    version:1,
+    settings:{name:'Minha Papelaria',phone:'',address:''},
+    products:[],
+    services:INITIAL_SERVICES.map(item=>({id:uid(),...item})),
+    employees:[],movements:[],sales:[],sessions:[],
+    goals:{daily:0,monthly:0},
+    ui:{theme:'light'},
+    lastBackup:null
+  };
+}
+
+// Dados antigos da 1.0 e 1.1 não possuíam goals e ui.
+function normalizeData(data) {
+  data.goals = data.goals && typeof data.goals === 'object'
+    ? {daily:Number(data.goals.daily)||0,monthly:Number(data.goals.monthly)||0}
+    : {daily:0,monthly:0};
+  data.ui = data.ui && typeof data.ui === 'object'
+    ? {theme:data.ui.theme==='dark'?'dark':'light'}
+    : {theme:'light'};
+  data.movements.forEach(m=>{if(typeof m.voided!=='boolean')m.voided=false;});
+  return data;
+}
+
+function validData(data) {
+  if (!data || data.version!==1 || !data.settings || typeof data.settings.name!=='string')return false;
+  const collections=['products','services','employees','movements','sales','sessions'];
+  if (!collections.every(key=>Array.isArray(data[key]) && data[key].length<=200000))return false;
+  return collections.every(key=>data[key].every(item=>item&&typeof item==='object'&&typeof item.id==='string'));
+}
+
+let storageError=false;
+function loadData() {
+  try {
+    const raw=localStorage.getItem(DB_KEY);
+    if (!raw)return freshData();
+    const data=JSON.parse(raw);
+    if (!validData(data))throw Error('Registros locais incompatíveis');
+    return normalizeData(data);
+  } catch (error) {
+    storageError=true;
+    alert('Não foi possível ler os registros antigos. Nenhum dado foi sobrescrito. Restaure um backup ou examine o armazenamento antes de salvar novos registros.');
+    return freshData();
+  }
+}
 let db=loadData();
-function saveData(){try{localStorage.setItem(DB_KEY,JSON.stringify(db));return true;}catch(e){alert('Não foi possível salvar os registros. Verifique o armazenamento do navegador e faça backup.');return false;}}
-function commit(modifier){const before=structuredClone(db);try{modifier();if(!saveData()){db=before;return false;}return true;}catch(err){db=before;alert(err.message||'Falha ao salvar');return false;}}
-function exportData(){const copy=structuredClone(db);copy.lastBackup=new Date().toISOString();const blob=new Blob([JSON.stringify(copy,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`papelaria-backup-${new Date().toISOString().slice(0,10)}.json`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);commit(()=>{db.lastBackup=copy.lastBackup;});}
-async function importData(file){if(!file||file.size>25*1024*1024)throw Error('Arquivo ausente ou maior que 25 MB.');let data;try{data=JSON.parse(await file.text());}catch{throw Error('JSON inválido.');}if(!validData(data))throw Error('Este arquivo não é um backup compatível com Papelaria Manager 1.0.');for(const k of ['products','services','employees','movements','sales','sessions']){if(data[k].some(o=>!o||typeof o!=='object'||typeof o.id!=='string'))throw Error(`Registros inválidos em ${k}`);}
- if(!confirm('ATENÇÃO: todos os dados atuais deste navegador serão SUBSTITUÍDOS pelo backup. Deseja continuar?'))return false;
- const prior=db;db=data;if(!saveData()){db=prior;return false;}return true;}
+
+function saveData() {
+  if(storageError){alert('O armazenamento anterior está com erro. Para proteger os dados existentes, o salvamento foi bloqueado nesta aba.');return false;}
+  try {
+    localStorage.setItem(DB_KEY,JSON.stringify(db));
+    return true;
+  } catch (error) {
+    alert('Não foi possível salvar. O armazenamento pode estar cheio ou bloqueado. Faça backup antes de continuar.');
+    return false;
+  }
+}
+
+// Modifica e salva como uma operação; desfaz a memória se a gravação falhar.
+function commit(modifier) {
+  const original=structuredClone(db);
+  try {
+    modifier();
+    if(!saveData()){db=original;return false;}
+    return true;
+  }catch(error){db=original;alert(error.message||'Erro ao salvar');return false;}
+}
+
+function exportData() {
+  const snapshot=structuredClone(db);
+  const when=new Date().toISOString();
+  snapshot.lastBackup=when;
+  const blob=new Blob([JSON.stringify(snapshot,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const link=document.createElement('a');
+  link.href=url;
+  link.download=`papelaria-manager-backup-${new Date().toLocaleDateString('sv-SE')}.json`;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),2500);
+  commit(()=>{db.lastBackup=when;});
+}
+
+async function importData(file) {
+  if(!file||file.size>30*1024*1024)throw Error('Escolha um backup JSON de até 30 MB.');
+  let data;
+  try{data=JSON.parse(await file.text());}catch{throw Error('O arquivo JSON não pôde ser lido.');}
+  if(!validData(data))throw Error('O arquivo não é um backup compatível do Papelaria Manager.');
+  if(!confirm('ATENÇÃO: restaurar substitui todos os dados locais, inclusive vendas e estoque. Deseja continuar?'))return false;
+  const original=db;
+  db=normalizeData(data);
+  if(!saveData()){db=original;return false;}
+  return true;
+}
