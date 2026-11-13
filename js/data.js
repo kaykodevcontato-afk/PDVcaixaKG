@@ -1,5 +1,5 @@
 /*
- * Papelaria Manager 1.2 — Persistência local
+ * Papelaria Manager 1.4 — Persistência local
  * A CHAVE ABAIXO É A MESMA DA VERSÃO 1.1.
  * Não mude DB_KEY se quiser preservar os dados já guardados no navegador.
  */
@@ -27,6 +27,8 @@ function freshData() {
     employees:[],movements:[],sales:[],sessions:[],
     goals:{daily:0,monthly:0},
     ui:{theme:'light'},
+    security:null, // senha do caixa: salt + hash derivado via PBKDF2
+
     lastBackup:null
   };
 }
@@ -39,6 +41,10 @@ function normalizeData(data) {
   data.ui = data.ui && typeof data.ui === 'object'
     ? {theme:data.ui.theme==='dark'?'dark':'light'}
     : {theme:'light'};
+  data.security = data.security && typeof data.security==='object'
+    && typeof data.security.salt==='string' && typeof data.security.hash==='string'
+    && Number.isSafeInteger(data.security.iterations) && data.security.iterations>=100000
+    ? data.security : null;
   data.movements.forEach(m=>{if(typeof m.voided!=='boolean')m.voided=false;});
   return data;
 }

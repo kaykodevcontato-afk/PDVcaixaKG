@@ -1,5 +1,5 @@
 /*
-  PAPELARIA MANAGER 1.3 — DEV KAYKO
+  PAPELARIA MANAGER 1.4 — DEV KAYKO
   1. Variáveis / temas
   2. Estrutura / componentes
   3. PDV em tela cheia no desktop
@@ -111,20 +111,21 @@ footer{font-size:.72rem;color:var(--muted);text-align:center;padding:14px}
 @media(max-height:700px) and (min-width:901px){.pdv-toolbar{min-height:42px;margin-bottom:6px}.pdv-grid>.panel{padding:9px}.pdv-grid .panel-head{margin-bottom:4px}.pdv-grid input,.pdv-grid select{padding:5px 8px}.pdv-tile{min-height:77px;padding:7px}.pdv-checkout{gap:3px}.pdv-checkout .pdv-keyboard{padding:5px;min-height:139px}.pdv-numpad{grid-template-rows:repeat(5,minmax(26px,1fr));gap:3px}.pdv-numpad button{min-height:26px}.pdv-catalog-foot{display:none}.finish-btn{padding:8px}}
 
 /* ── 5. IMPRESSÃO DO FECHAMENTO ── */
-@page{size:A4;margin:12mm}
+/* Espaço real nas QUATRO bordas do relatório A4 e do PDF. */
+@page{size:A4;margin:20mm 19mm 22mm 19mm}
 @media print{
   :root,html[data-theme="dark"]{--text:#111;--muted:#444;--surface:#fff;--surface-2:#f6f6f6;--line:#ccc;--bg:#fff;--primary:#111;--success:#111;--danger:#111}
   body,body.pdv-mode{height:auto!important;overflow:visible!important;background:#fff;color:#111;font-size:11px}
   .shell,.main-wrap,main{display:block!important;height:auto!important;min-height:0!important;overflow:visible!important;width:100%!important;max-width:100%!important;margin:0!important;padding:0!important}
   .sidebar,.topbar,footer,.modal-overlay,.toast,.screen-only,.section-head,.report-filters,.hint,.page:not(#page-relatorios),.btn,.link-btn,.table-action{display:none!important}
   #page-relatorios{display:block!important}
-  #printHeader{display:block!important;margin-bottom:13px;border-bottom:2px solid #222;padding-bottom:8px}
+  #printHeader{display:block!important;margin-bottom:16px;border-bottom:2px solid #222;padding-bottom:11px}
   #printHeader h2{font-size:17px;margin:0 0 5px}#printHeader p{margin:2px 0;font-size:10px;color:#333}
   .stat-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-bottom:10px}
   .stat{padding:9px;border:1px solid #bbb;box-shadow:none}.stat strong{font-size:13px}.stat span,.stat small{font-size:9px}
-  .report-block{padding:9px;margin-bottom:10px;border:1px solid #bbb;box-shadow:none;break-inside:avoid-page}
+  .report-block{padding:10px 12px;margin-bottom:12px;border:1px solid #bbb;box-shadow:none;break-inside:auto}
   .panel-head h3{font-size:12px}.summary-grid{gap:5px;grid-template-columns:repeat(3,minmax(0,1fr))}.summary-grid>div{padding:6px}.summary-grid strong{font-size:11px}
-  .table-wrap{overflow:visible}table{font-size:9px}th,td{padding:5px;border-bottom:1px solid #ccc}
+  .table-wrap{overflow:visible}table{font-size:9px}th,td{padding:7px 5px;border-bottom:1px solid #ccc}
   thead{display:table-header-group}tr{break-inside:avoid} .voided-row{opacity:1}
   .report-disclaimer{display:block!important;color:#333!important;font-size:9px}
 }
@@ -136,23 +137,41 @@ footer{font-size:.72rem;color:var(--muted);text-align:center;padding:14px}
 .receipt-actions .btn{white-space:normal;min-height:48px;text-align:center;padding:10px}
 .receipt-actions .btn:nth-child(3),.receipt-actions .btn:nth-child(4){grid-column:1/-1}
 .receipt-history-actions{min-width:205px}
-#receiptPaper{display:block;position:absolute;left:-10000px;top:0;width:54mm;visibility:hidden;color:#000;background:#fff;font-family:Arial,sans-serif;font-size:10px;line-height:1.23}
-.receipt-ticket{width:54mm;padding:2mm 2mm 3mm;background:#fff;color:#000;overflow-wrap:anywhere;break-inside:avoid;page-break-inside:avoid}
-.receipt-ticket+.receipt-ticket{border-top:1px dashed #000;margin-top:3mm;padding-top:3mm}
+#receiptPaper{display:block;position:absolute;left:-10000px;top:0;width:58mm;visibility:hidden;color:#000;background:#fff;font-family:Arial,sans-serif;font-size:10px;line-height:1.35}
+/* Papel total 58mm. Texto útil = 46mm, recuo de 6mm em cada lado.
+   Topo 7mm, rodapé 9mm, incluindo ao salvar o recibo como PDF. */
+.receipt-ticket{width:58mm;padding:7mm 6mm 9mm;background:#fff;color:#000;overflow-wrap:anywhere;break-inside:avoid;page-break-inside:avoid}
+.receipt-ticket+.receipt-ticket{border-top:1px dashed #000;margin-top:5mm;padding-top:8mm}
 .receipt-center{text-align:center}.receipt-center h3{font-size:13px;line-height:1.12;margin:0 0 4px;color:#000}.receipt-center p{margin:1px 0;color:#000;font-size:10px}
 .receipt-divider{border:0;border-top:1px dashed #000;margin:6px 0}
 .receipt-line{display:flex;justify-content:space-between;gap:4px;margin:3px 0;line-height:1.2}
 .receipt-line span:last-child{text-align:right;flex:0 0 auto}
 .receipt-line strong{font-weight:750}.receipt-item{margin:6px 0}.receipt-item-name{font-weight:650}
 .receipt-muted{font-size:9px;color:#111}
+/* A medição do comprimento usa o mesmo rodapé no monitor e no modo impressão. */
+#receiptPaper .receipt-ticket footer{display:block!important;margin:0!important;padding:0!important;text-align:center!important;font-size:10px!important}
 @media(max-width:430px){.receipt-actions{grid-template-columns:1fr}.receipt-actions .btn{grid-column:1/-1}}
 @media print{
-  body.printing-receipt{height:auto!important;background:white!important;overflow:visible!important;min-height:0!important}
+  html{min-width:0!important}
+  body.printing-receipt{min-width:0!important;width:58mm!important;max-width:58mm!important;height:auto!important;background:white!important;overflow:visible!important;min-height:0!important}
   body.printing-receipt .shell,body.printing-receipt .toast,body.printing-receipt .modal-overlay{display:none!important}
-  body.printing-receipt #receiptPaper{display:block!important;visibility:visible!important;position:static!important;left:auto!important;top:auto!important;margin:0!important;padding:0!important;width:54mm!important;color:#000!important;background:white!important}
+  body.printing-receipt #receiptPaper{display:block!important;visibility:visible!important;position:static!important;left:auto!important;top:auto!important;margin:0!important;padding:0!important;width:58mm!important;color:#000!important;background:white!important}
 }
 
 @media print{
   body.printing-receipt #receiptPaper footer{display:block!important;font-size:10px!important;padding:0!important;margin:0!important;text-align:center!important}
   body.printing-receipt #receiptPaper .receipt-ticket{break-inside:avoid-page!important;box-shadow:none!important;border-radius:0!important}
 }
+
+/* ── 7. SENHA LOCAL E TRAVA DE CAIXA ── */
+.auth-overlay{z-index:90;backdrop-filter:blur(5px)}
+.auth-modal{max-width:455px;box-shadow:0 30px 120px #0009}
+.auth-icon{width:56px;height:56px;display:grid;place-items:center;font-size:1.55rem;border-radius:16px;background:var(--primary-soft);margin:0 0 14px}
+.auth-modal h3{font-size:1.35rem;margin:0 0 7px}
+.auth-modal p{font-size:.83rem}
+.auth-error{background:var(--danger-bg);color:var(--danger);padding:10px 12px;border-radius:8px;margin:13px 0 0}
+.auth-modal .stack-form{margin-top:17px}
+.auth-modal input[type=password]{font-size:1rem;letter-spacing:.06em}
+.security-panel .panel-head{align-items:center}
+body.pdv-focus .main-wrap{width:100%}
+@media(min-width:901px){body.pdv-focus .pdv-grid{grid-template-columns:minmax(220px,1.16fr) minmax(200px,.86fr) minmax(270px,.92fr)}}

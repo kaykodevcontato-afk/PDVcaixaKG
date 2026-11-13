@@ -1,70 +1,106 @@
-# Papelaria Manager 1.3 — Dev Kayko
+# Papelaria Manager 1.4 — Dev Kayko
 
-Sistema para papelarias e gráficas rápidas, que funciona em **GitHub Pages**, usando HTML, CSS e JavaScript locais. Não exige servidor, conta, biblioteca online ou assinatura.
+Sistema de gestão de papelaria e gráfica rápida, hospedável **100% no GitHub Pages**, sem servidor ou banco online. Feito em HTML, CSS e JavaScript, com arquivos separados para facilitar a edição.
 
-## Novidade 1.3 — comprovante térmico 58 mm + Excel de verdade
+## Novidades 1.4 — Margens para impressão + Senha do caixa
 
-### Comprovante para cliente e loja
+### 1. Mais espaço nas quatro bordas da impressão
 
-1. Abra a **Frente de caixa**, abra o caixa, registre uma venda.
-2. Ao finalizar, surge **Venda registrada** com três opções: **Via do cliente (58 mm)**, **Via da loja (58 mm)** ou **Imprimir as duas vias**.
-3. Selecione sua impressora térmica na janela de impressão do navegador e ajuste para **papel de 58 mm** (sem margens, preferencialmente).
-4. Reimprima quando quiser em **Relatórios e histórico → Vendas registradas → Via cliente / Via loja**. As vendas canceladas continuam identificadas como canceladas no papel.
+**Relatórios A4 e PDF (Imprimir / Salvar PDF):**
 
-O comprovante contém: nome e contato do estabelecimento, número da venda, data e horário, tipo de via, itens, quantidade, valores, desconto, total, forma de pagamento e troco quando for dinheiro, além da indicação **COMPROVANTE NÃO FISCAL**. A largura do documento é 58 mm, com conteúdo útil de 54 mm.
+- Topo: **20 mm**
+- Embaixo: **22 mm**
+- Esquerda e direita: **19 mm** cada
 
-**IMPORTANTE SOBRE A IMPRESSORA BLUETOOTH:** o site **não** envia comandos ESC/POS diretamente ao Bluetooth, pois isso depende do protocolo e driver do modelo. O botão chama a janela de impressão do navegador (`window.print()`). Na maioria das situações você precisa **emparelhar e instalar a impressora no Windows/Android** com driver ou aplicativo compatível; ela deverá aparecer na lista de impressoras. Se o seu modelo só imprime pelo próprio aplicativo e não aparece como impressora do sistema, poderá ser necessário usar **Salvar como PDF → compartilhar com o app da impressora**. Teste uma venda de baixo valor antes de atender clientes. A impressão não substitui cupom fiscal, NFC-e ou nota fiscal.
+**Comprovantes térmicos para rolo de 58 mm**, tanto a **via do cliente** como a **via da loja**:
 
-### Registro em Excel `.xlsx` (sem internet extra)
+- Topo: **7 mm**
+- Embaixo: **9 mm**
+- Esquerda e direita: **6 mm** cada
+- Área útil do texto: **46 mm** em um papel de **58 mm**.
+- Entre as vias há um espaço extra para destacar o papel.
 
-- **Relatórios e histórico** → escolha **Dia** ou **Mês**, informe data e clique em **Exportar Excel (.xlsx)**.
-- **Configurações** → **Histórico completo para Excel (.xlsx)** baixa todos os períodos.
-- Após cada venda → **Registrar esta venda no Excel** baixa a planilha individual da venda.
-- O Excel do período traz abas: **Resumo, Vendas, Itens vendidos, Movimentações, Entradas, Saídas, Fechamentos e Estoque atual**. Os valores monetários são números de verdade, formatados em reais, para permitir somar, filtrar e criar gráficos.
-- Vendas canceladas e lançamentos cancelados ficam identificados como **CANCELADA/CANCELADO**, e não integram o saldo operacional do resumo.
-- Salários pagos via Financeiro aparecem nas movimentações e saídas. Os cadastros salariais dos funcionários não são incluídos na planilha.
+As margens são aplicadas **dentro do comprovante**. No driver da impressora, escolha rolo de **58 mm** e desative margens automáticas adicionais, se possível, para não somar margens duas vezes. A área imprimível varia de impressora para impressora. Faça um teste em papel antes de usar na loja. O mesmo layout pode ser enviado para **Salvar como PDF** na janela do navegador.
 
-**O Excel não é editado automaticamente no computador:** por segurança, um website estático não tem permissão para atualizar um `.xlsx` existente na pasta Downloads. Você baixa **uma cópia atualizada** sempre que exportar. Continue registrando as vendas no site e exporte **ao fechar o dia** (ou mês). **Arquivo XLSX não é backup:** mantenha também o JSON com todos os dados, para restaurar o sistema.
+### 2. Senha para abrir e fechar o caixa
 
-### O que já existia na versão 1.2
+**No primeiro uso:**
 
-- PDV compacto para desktop, com catálogo por nome/código/categoria, teclado numérico e carrinho; venda atualiza o estoque.
-- Registro de vendas, serviços, itens, descontos, formas de pagamento e troco.
-- Entradas, saídas, salários, metas, saldo operacional diário e mensal.
-- Fechamento com contagem de caixa, diferença entre o valor contado e o esperado, impressão A4/PDF.
-- Tema claro/escuro, backup/restauração JSON, histórico de cancelamentos.
+1. Abra **Frente de caixa → Abrir caixa**.
+2. O sistema pede para **criar uma senha de 6 a 64 caracteres** (ela pode conter números, letras e símbolos) e confirmá-la.
+3. Informe o **saldo inicial** e confirme.
+4. O caixa será aberto e o PDV ficará **expandido para ocupar a tela**. O sistema tenta também ativar a tela cheia do navegador; se não houver permissão, mantém a versão expandida dentro da página.
 
-## Organização dos códigos
+**Durante o expediente:**
+
+- O botão **Sair da tela (senha)** solicita a senha antes de voltar ao painel normal. Sair do modo expandido **não fecha** o caixa.
+- **Fechar caixa e backup** solicita senha e valor contado; após confirmar, registra o fechamento, exporta o **backup JSON** e abre o relatório do dia.
+- Caso a página seja recarregada enquanto o caixa estiver aberto, aparece **Desbloquear caixa** solicitando novamente a senha.
+- Caso o navegador saia da sua própria tela cheia (por exemplo **Esc**), o sistema apresenta a tela de desbloqueio para retornar ao atendimento. Por motivos de segurança e controle do navegador, **um site não pode impedir Esc, F11, fechamento da aba ou saída da tela cheia do sistema operacional**.
+
+**Trocar senha:** acesse **Configurações → Senha do caixa → Alterar senha do caixa**. Quando já houver uma senha configurada, o sistema solicitará a atual antes de aceitar a nova.
+
+**Como a senha é guardada:** é gerado um verificador com **PBKDF2-SHA-256, salt aleatório e 210.000 iterações**, armazenado apenas no navegador. O texto da senha não é armazenado. A função criptográfica depende de Web Crypto (disponível normalmente no **HTTPS do GitHub Pages**). Existe atraso temporário na interface após cinco erros de senha; não é bloqueio de segurança de servidor.
+
+**Limitação essencial:** como é um aplicativo estático e sem servidor, a senha protege **o fluxo da interface**, mas **não substitui autenticação de usuários nem impede alguém com acesso aos arquivos, ao navegador ou às ferramentas de desenvolvedor de modificar os dados ou contornar o bloqueio**. A senha não protege os cadastros de funcionários como um sistema com permissões faria.
+
+**Se esquecer a senha:** não existe recuperação automática. Faça backups frequentes e guarde a senha em local seguro. O arquivo de backup JSON contém o **verificador da senha**, mas **não contém a senha legível**. Restaurar um backup também restaura a senha que estava configurada naquele backup.
+
+## Funcionalidades mantidas da 1.3
+
+- **PDV rápido:** catálogo com pesquisa por nome, código ou categoria, produtos e serviços rápidos, carrinho, teclado numérico, desconto, pagamento e troco.
+- **Vendas e estoque:** histórico por data e hora, baixa automática e cancelamentos rastreáveis.
+- **Comprovante 58 mm:** imprimir a via do cliente, via da loja ou ambas depois da venda e pelo histórico. **Comprovante não fiscal.**
+- **Excel `.xlsx`:** exportação por dia, mês, histórico completo ou venda individual. Abas Resumo, Vendas, Itens vendidos, Movimentações, Entradas, Saídas, Fechamentos e Estoque atual.
+- **Relatórios A4/PDF**, entradas, saídas, metas, resultados positivos/negativos, salários, backup/restauração JSON e modo claro/escuro.
+- Os arquivos Excel são **cópias exportadas no momento**: o site não escreve automaticamente em uma planilha Excel já existente no computador.
+
+## Estrutura organizada
 
 ```text
 papelaria-manager/
-├── index.html          # estrutura de telas, botões, janelas de comprovante
+├── index.html         # interface, botões e formulários
 ├── css/
-│   └── style.css       # layout do PDV, cores, @media print 58 mm e A4
+│   └── style.css      # temas, PDV e margens para impressão
 ├── js/
-│   ├── data.js         # banco local e backup; DB_KEY compatível com 1.2
-│   ├── excel.js        # GERADOR XLSX local, relatórios Excel por período
-│   └── app.js          # vendas, recibos, cálculos, relatórios e interações
+│   ├── data.js        # dados locais, compatibilidade e backups
+│   ├── security.js    # geração e verificação da senha do caixa
+│   ├── excel.js       # exportação XLSX sem servidor
+│   └── app.js         # caixa, vendas, relatórios e controles
 └── README.md
 ```
 
-Para editar o nome do estabelecimento, use **Configurações**. Para ajustar os textos, procure no `index.html`. Para mudar impressão térmica/recibo, edite `receiptMarkup` e `printReceipt` em `js/app.js` e as classes `.receipt-*` em `css/style.css`. Para configurar as abas do Excel, edite `excelSheetData` em `js/excel.js`. Não mude `DB_KEY` em `js/data.js`: isso mantém os dados da v1.2 no mesmo navegador e endereço.
+### Onde editar
 
-## Publicar / atualizar GitHub Pages
+- **Cores / tamanho / layout:** `css/style.css`, especialmente as variáveis `:root`.
+- **Margens do PDF A4:** `@page { size: A4; ... }` em `css/style.css`.
+- **Margens dos comprovantes:** `.receipt-ticket` em `css/style.css`.
+- **Conteúdo do comprovante:** função `receiptMarkup` em `js/app.js`.
+- **Senha / hash / validação:** `js/security.js`; interface e operações com senha em `js/app.js`.
+- **Serviços predefinidos:** `INITIAL_SERVICES` em `js/data.js`.
+- **Planilhas Excel:** `js/excel.js`.
+- **Evite mudar** `DB_KEY = 'devkayko_papelaria_v1'` de `js/data.js`, pois ele garante compatibilidade com registros locais das versões 1.1, 1.2 e 1.3.
 
-1. **Antes da atualização:** faça um **Backup JSON** da versão atual e guarde-o fora do navegador.
-2. Baixe o ZIP desta versão 1.3, descompacte e substitua `index.html`, `README.md`, `css/style.css`, `js/app.js` e `js/data.js`. **Adicione** também o novo `js/excel.js`.
-3. Envie tudo ao repositório GitHub, mantendo as pastas.
-4. Confirme que GitHub → **Settings → Pages** está com `Deploy from a branch` / `main` / `/(root)`.
-5. Abra a URL do projeto e faça `Ctrl + F5` caso seu navegador mostre a versão antiga.
-6. Registre uma **venda de teste**, confira a impressão e exporte o Excel para confirmar o ambiente de sua impressora.
+## Atualizar no GitHub Pages
 
-## Limites de uso do GitHub Pages
+1. Antes de atualizar, entre no sistema anterior e **baixe o Backup JSON**; salve também uma cópia do Excel atual se desejar.
+2. Descompacte este ZIP no computador.
+3. No repositório do GitHub, **substitua** os arquivos anteriores, preservando `css/` e `js/`, e **adicione o novo `js/security.js`**.
+4. Confira **Settings → Pages → Deploy from a branch → main → /(root)**.
+5. Abra o endereço publicado do site e recarregue com **Ctrl + F5** no Windows.
+6. Faça **uma venda de teste**, imprima as duas vias, verifique o relatório e exporte o Excel.
 
-Os dados de vendas ficam apenas no `localStorage` **do navegador e endereço atuais**. Não são gravados no GitHub nem sincronizados entre computadores. Faça backup JSON diariamente. O Excel gera um relatório manual, não sincronização simultânea, nem substitui a emissão de documentos fiscais. Não armazene dados pessoais sensíveis de clientes ou funcionários em um computador compartilhado sem proteção.
+**ATENÇÃO:** o `localStorage` guarda vendas e configurações somente no navegador e endereço atual. GitHub Pages hospeda os arquivos, mas **não salva as vendas na conta GitHub**. Não limpe os dados do navegador e faça backup JSON todos os dias. Use um único computador principal para operar o caixa: vários computadores não sincronizam.
 
-### Verificações feitas
+### Impressora Bluetooth 58 mm
 
-Validações em Chromium: venda de produto e serviço, atualização de estoque, modal de impressão, duas vias, impressão posterior pelo histórico, tema escuro, geração das planilhas `.xlsx` por período e por venda, estrutura ZIP/XML do Excel, importação do `.xlsx` com `artifact_tool` e backup JSON. **Não foi possível testar fisicamente sua impressora Bluetooth sem o modelo e o dispositivo.**
+A impressão usa a **janela padrão do navegador**, e não uma conexão direta por protocolo ESC/POS. A impressora deverá ser reconhecida pelo Windows/Android com driver ou aplicativo compatível. Se não aparecer na lista de impressoras, use **Salvar como PDF** e compartilhe o PDF com o aplicativo da impressora quando ele oferecer essa função. A compatibilidade depende do modelo e não foi testada fisicamente.
 
-© 2026 Papelaria Manager — **Desenvolvido por Dev Kayko**
+### Validações
+
+- Verificação de sintaxe JavaScript.
+- Teste automatizado de navegador para criação e verificação de senha, abertura, fechamento, tentativa incorreta, reentrada após recarregamento, emissão das duas vias e backup com vendas.
+- Teste independente com **Web Crypto PBKDF2 real** em Node.js.
+- As margens foram conferidas pelas regras CSS e no layout do comprovante. Impressoras físicas precisam de teste no equipamento.
+
+© 2026 Papelaria Manager — Desenvolvido por **Dev Kayko**.

@@ -1,5 +1,5 @@
 /*
- * Papelaria Manager 1.3 — Dev Kayko
+ * Papelaria Manager 1.4 — Dev Kayko
  * Navegação, PDV, financeiro, metas, relatórios e interface.
  * Dados e backups: veja js/data.js
  * Layout e cores: veja css/style.css
@@ -42,6 +42,12 @@ let cart=[];
 let modalHandler=null;
 let numpadFocus='posQty';
 let lastReceiptSaleId=null; // ID para imprimir depois de registrar uma venda
+let operatorUnlocked=!activeSession(); // novamente bloqueado depois de recarregar a página
+let authRequest=null;
+let authBusy=false;
+let wrongAttempts=0;
+let lockUntil=0;
+let expectedFullscreenExit=false;
 
 function toast(text) {
   const element=$('toast');
@@ -78,15 +84,21 @@ function selectedPeriod() {
 // 2. NAVEGAÇÃO E VISÃO GERAL
 // ────────────────────────────────────────────────────────────
 const pageNames={inicio:'Visão geral',caixa:'Frente de caixa',produtos:'Produtos e estoque',servicos:'Serviços',financeiro:'Financeiro',funcionarios:'Funcionários',metas:'Metas',relatorios:'Relatórios e histórico',configuracoes:'Configurações'};
-function go(page) {
+function go(page, bypassLock=false) {
   if(!pageNames[page])return;
+  if(!bypassLock && activeSession() && !operatorUnlocked){requestCashPassword('resume');return;}
+  if(!bypassLock && page!=='caixa' && activeSession() && document.body.classList.contains('pdv-focus')){
+    requestCashPassword('exit',{nextPage:page});return;
+  }
   currentPage=page;
   document.querySelectorAll('.page').forEach(section=>section.classList.toggle('active',section.id==='page-'+page));
   document.querySelectorAll('.nav-item').forEach(button=>button.classList.toggle('active',button.dataset.page===page));
   $('pageTitle').textContent=pageNames[page];
   $('sidebar').classList.remove('visible');
   document.body.classList.toggle('pdv-mode',page==='caixa');
+  if(page==='caixa' && activeSession() && operatorUnlocked)document.body.classList.add('pdv-focus');
   if(page!=='caixa')document.body.classList.remove('pdv-focus');
+  syncPdvFocusButton();
   render();
   window.scrollTo({top:0,behavior:'instant'});
 }
@@ -113,6 +125,9 @@ function render() {
   $('cashStatus').classList.toggle('open',Boolean(open));
   $('openCashBtn').disabled=Boolean(open);
   $('closeCashBtn').disabled=!open;
+  $('securityStatus').textContent=db.security?'Senha configurada':'Senha não configurada';
+  $('changeCashPassword').textContent=db.security?'Alterar senha do caixa':'Criar senha do caixa';
+  syncPdvFocusButton();
   $('statSales').textContent=money(todayStats.salesAmount);
   $('statCount').textContent=`${todayStats.sales.length} venda(s) registrada(s)`;
   $('statIncome').textContent=money(todayStats.extraIncome);
@@ -240,6 +255,7 @@ function renderCart() {
 function finishSale() {
   const session=activeSession();
   if(!session)return toast('Abra o caixa antes de registrar uma venda.');
+  if(!operatorUnlocked)return requestCashPassword('resume');
   if(!cart.length)return toast('Adicione algum produto ou serviço.');
   const discountRaw=$('discountValue').value;
   if(!validNonNeg(discountRaw)||($('discountType').value==='percent'&&Number(discountRaw)>100))return toast('Desconto inválido.');
@@ -302,39 +318,179 @@ function sessionTotals(session) {
   const expected=fromCents(toCents(session.opening)+toCents(cashSales)+toCents(cashIn)-toCents(cashOut));
   return {cashSales,electronicSales,cashIn,cashOut,expected,numberSales:sales.length};
 }
-function openCash() {
-  if(activeSession())return toast('Há um caixa aberto.');
-  const value=prompt('Informe o saldo inicial em dinheiro (R$):','0');
-  if(value===null)return;
-  const opening=Number(value.replace(',','.'));
-  if(!validNonNeg(opening))return toast('Saldo inicial inválido.');
-  if(commit(()=>db.sessions.push({id:uid(),openedAt:new Date().toISOString(),opening,closedAt:null}))){render();toast('Caixa aberto. Agora você pode registrar vendas.');}
+// A senha do caixa funciona localmente, sem servidor. O sistema controla
+// a interface, mas não impede que alguém com acesso ao DevTools modifique dados.
+function syncPdvFocusButton(){
+  const focusing=document.body.classList.contains('pdv-focus');
+  $('focusPdv').textContent=focusing?(activeSession()?'🔐 Sair da tela (senha)':'✕ Sair da tela expandida'):'⛶ Tela expandida';
 }
-function closeCash() {
-  const session=activeSession();
-  if(!session)return toast('O caixa já está fechado.');
-  const values=sessionTotals(session);
-  const message=`FECHAMENTO DE CAIXA\n\nVendas em dinheiro: ${money(values.cashSales)}\nVendas Pix/cartão/outros: ${money(values.electronicSales)}\nEntradas em espécie: ${money(values.cashIn)}\nSaídas em espécie: ${money(values.cashOut)}\nSaldo esperado na gaveta: ${money(values.expected)}\n\nQuanto você contou em dinheiro no caixa?`;
-  const response=prompt(message,values.expected.toFixed(2));
-  if(response===null)return;
-  const counted=Number(response.replace(',','.'));
-  if(!validNonNeg(counted))return toast('Valor contado inválido.');
-  const difference=fromCents(toCents(counted)-toCents(values.expected));
-  if(!confirm(`Confirmar fechamento?\n\nDiferença entre dinheiro contado e esperado: ${money(difference)}.\n\nO sistema abrirá o relatório do dia e baixará um backup JSON.`))return;
-  if(!commit(()=>{
-    session.closedAt=new Date().toISOString();
-    session.expected=values.expected;
-    session.counted=counted;
-    session.difference=difference;
-  }))return;
-  $('reportPeriod').value='day';
-  $('reportDay').value=localDate();
-  $('reportDayWrap').hidden=false;
-  $('reportMonthWrap').hidden=true;
-  // Backup com o fechamento incluído, disparado pela ação do operador.
-  exportData();
-  go('relatorios');
-  toast('Caixa fechado. Backup baixado; use Imprimir / Salvar PDF para o fechamento.');
+function requestCashPassword(action,details={}){
+  if(!$('securityOverlay').hidden)return;
+  authRequest={action,...details};
+  const setup=!db.security;
+  const change=action==='change';
+  const titles={open:'Abrir caixa',close:'Fechar caixa',exit:'Sair da tela expandida',resume:'Desbloquear caixa',change:setup?'Criar senha do caixa':'Alterar senha do caixa'};
+  const descriptions={
+    open:'Informe o saldo inicial e confirme a senha antes de começar o atendimento.',
+    close:'O fechamento exige senha e conferência do valor contado na gaveta.',
+    exit:'Informe a senha para sair do PDV expandido. O caixa continuará aberto.',
+    resume:'Caixa em andamento. Informe a senha para voltar ao PDV. O navegador pode sair da tela cheia ao pressionar Esc.',
+    change:'A senha será necessária para abrir, fechar e sair do caixa expandido.'
+  };
+  $('securityModalTitle').textContent=(setup?'Primeiro uso • ':'')+titles[action];
+  $('securityModalDescription').textContent=(setup && action!=='change'?'Crie uma senha de pelo menos 6 caracteres. Ela será usada neste dispositivo. ':'')+descriptions[action];
+  let fields='';
+  if(change&&db.security)fields+='<label>Senha atual<input name="oldPass" type="password" minlength="6" maxlength="64" autocomplete="current-password" required></label>';
+  if(setup||change){
+    fields+='<label>Nova senha<input name="newPass" type="password" minlength="6" maxlength="64" autocomplete="new-password" required placeholder="Mínimo de 6 caracteres"></label>';
+    fields+='<label>Confirmar nova senha<input name="confirmPass" type="password" minlength="6" maxlength="64" autocomplete="new-password" required></label>';
+  }else fields+='<label>Senha do caixa<input name="password" type="password" maxlength="64" autocomplete="off" required placeholder="Digite sua senha"></label>';
+  if(action==='open')fields+='<label>Saldo inicial em dinheiro (R$)<input name="opening" type="number" min="0" step="0.01" value="0" required inputmode="decimal"></label>';
+  if(action==='close'){
+    const total=sessionTotals(activeSession());
+    fields+=`<div class="auth-summary">Esperado em dinheiro: <strong>${money(total.expected)}</strong></div>`;
+    fields+=`<label>Dinheiro contado na gaveta (R$)<input name="counted" type="number" min="0" step="0.01" value="${total.expected.toFixed(2)}" required inputmode="decimal"></label>`;
+  }
+  $('securityFields').innerHTML=fields;
+  $('securityError').hidden=true;
+  $('securityError').textContent='';
+  $('securityCancel').hidden=action==='resume';
+  $('securityConfirm').textContent=action==='open'?'🔓 Abrir caixa':action==='close'?'🔒 Confirmar fechamento':action==='exit'?'Sair com senha':action==='resume'?'Desbloquear':'Salvar senha';
+  $('securityOverlay').hidden=false;
+  $('securityFields').querySelector('input')?.focus();
+}
+function closeSecurityDialog(){
+  authRequest=null;
+  $('securityOverlay').hidden=true;
+  $('securityFields').innerHTML='';
+  $('securityError').hidden=true;
+}
+function showSecurityError(text){
+  $('securityError').textContent=text;
+  $('securityError').hidden=false;
+}
+function setKioskMode(yes){
+  document.body.classList.toggle('pdv-focus',yes);
+  syncPdvFocusButton();
+}
+async function requestBrowserFullscreen(){
+  // A chamada pode ser recusada por políticas do navegador, inclusive depois
+  // de operações assíncronas. O modo CSS ocupa a área do site como alternativa.
+  if(!document.fullscreenElement&&document.documentElement.requestFullscreen){
+    try{await document.documentElement.requestFullscreen({navigationUI:'hide'});}
+    catch{toast('O navegador não autorizou tela cheia. O PDV continua expandido dentro da página.');}
+  }
+}
+async function releaseBrowserFullscreen(){
+  if(!document.fullscreenElement)return;
+  expectedFullscreenExit=true;
+  try{await document.exitFullscreen();}
+  catch{expectedFullscreenExit=false;}
+}
+function openCash(){
+  if(activeSession())return toast('Já existe um caixa aberto.');
+  requestCashPassword('open');
+}
+function closeCash(){
+  if(!activeSession())return toast('O caixa já está fechado.');
+  requestCashPassword('close');
+}
+async function submitCashPassword(event){
+  event.preventDefault();
+  if(authBusy||!authRequest)return;
+  if(Date.now()<lockUntil)return showSecurityError('Muitas tentativas. Aguarde alguns segundos antes de tentar novamente.');
+  authBusy=true;
+  $('securityConfirm').disabled=true;
+  const request={...authRequest};
+  const form=new FormData($('securityForm'));
+  try{
+    const creating=!db.security;
+    const changing=request.action==='change';
+    let securityRecord=null;
+    if(creating||changing){
+      const password=String(form.get('newPass')||'');
+      if(password!==String(form.get('confirmPass')||''))throw Error('As duas senhas não conferem.');
+      if(changing&&db.security && !(await CashSecurity.verify(String(form.get('oldPass')||''),db.security)))throw Error('Senha atual incorreta.');
+      securityRecord=await CashSecurity.create(password);
+    }else{
+      if(!(await CashSecurity.verify(String(form.get('password')||''),db.security)))throw Error('Senha incorreta. Confira e tente novamente.');
+    }
+    let value=null;
+    if(request.action==='open'){
+      value=String(form.get('opening')||'').replace(',','.');
+      if(!validNonNeg(value))throw Error('Saldo inicial inválido.');
+    }
+    if(request.action==='close'){
+      value=String(form.get('counted')||'').replace(',','.');
+      if(!validNonNeg(value))throw Error('Dinheiro contado inválido.');
+    }
+    // Confirmação de operações financeiras após validar senha.
+    if(request.action==='close'){
+      const values=sessionTotals(activeSession());
+      const difference=fromCents(toCents(value)-toCents(values.expected));
+      if(!confirm(`Fechar caixa agora?\n\nSaldo esperado: ${money(values.expected)}\nContado: ${money(value)}\nDiferença: ${money(difference)}\n\nO sistema baixará um backup JSON.`))return;
+    }
+    if(request.action==='change'){
+      if(!commit(()=>{db.security=securityRecord;}))return;
+      closeSecurityDialog();
+      render();toast('Senha do caixa definida com sucesso.');
+    }else if(request.action==='open'){
+      if(activeSession())throw Error('Já existe um caixa aberto.');
+      if(!commit(()=>{
+        if(securityRecord)db.security=securityRecord;
+        db.sessions.push({id:uid(),openedAt:new Date().toISOString(),opening:Number(value),closedAt:null});
+      }))return;
+      operatorUnlocked=true;
+      closeSecurityDialog();
+      go('caixa');
+      setKioskMode(true);
+      await requestBrowserFullscreen();
+      render();toast('Caixa aberto com senha. PDV expandido.');
+    }else if(request.action==='close'){
+      const session=activeSession();
+      if(!session)throw Error('Caixa já fechado.');
+      const totals=sessionTotals(session);
+      if(!commit(()=>{
+        if(securityRecord)db.security=securityRecord;
+        session.closedAt=new Date().toISOString();
+        session.expected=totals.expected;
+        session.counted=Number(value);
+        session.difference=fromCents(toCents(value)-toCents(totals.expected));
+      }))return;
+      operatorUnlocked=true;
+      closeSecurityDialog();
+      setKioskMode(false);
+      await releaseBrowserFullscreen();
+      $('reportPeriod').value='day';$('reportDay').value=localDate();
+      $('reportDayWrap').hidden=false;$('reportMonthWrap').hidden=true;
+      exportData();
+      go('relatorios');
+      toast('Caixa fechado com senha. Backup JSON baixado; imprima o relatório no menu Relatórios.');
+    }else if(request.action==='exit'){
+      if(securityRecord && !commit(()=>{db.security=securityRecord;}))return;
+      operatorUnlocked=true;
+      closeSecurityDialog();
+      setKioskMode(false);
+      await releaseBrowserFullscreen();
+      if(request.nextPage)go(request.nextPage);
+      toast('Saída do modo expandido autorizada. O caixa permanece aberto.');
+    }else if(request.action==='resume'){
+      if(securityRecord && !commit(()=>{db.security=securityRecord;}))return;
+      operatorUnlocked=true;
+      closeSecurityDialog();
+      go('caixa');
+      setKioskMode(true);
+      await requestBrowserFullscreen();
+      toast('Caixa desbloqueado.');
+    }
+    wrongAttempts=0;
+  }catch(error){
+    if(/senha (incorreta|atual incorreta)/i.test(error.message)){
+      wrongAttempts++;
+      if(wrongAttempts>=5){lockUntil=Date.now()+15000;wrongAttempts=0;}
+    }
+    showSecurityError(error.message||'Não foi possível validar a senha.');
+  }finally{authBusy=false;$('securityConfirm').disabled=false;}
 }
 
 // ────────────────────────────────────────────────────────────
@@ -547,7 +703,9 @@ function printReceipt(saleId,via='cliente'){
   paper.innerHTML=chosen.map(item=>receiptMarkup(sale,item)).join('');
   // Ajusta o comprimento da folha conforme o texto, evitando desperdício
   // de uma folha A4 na impressora térmica. O driver deve usar papel 58 mm.
-  const heightMm=Math.max(60,Math.min(1600,Math.ceil(paper.scrollHeight*25.4/96+8)));
+  // Rodapé medido com o mesmo CSS usado na impressão: comprimento suficiente
+  // inclusive para vendas longas, com folga de 7 mm para destaque do rolo.
+  const heightMm=Math.max(65,Math.min(1800,Math.ceil(paper.scrollHeight*25.4/96+7)));
   cleanupReceiptPrint();
   const style=document.createElement('style');
   style.id='receiptPageStyle';
@@ -568,14 +726,37 @@ function bind() {
   document.querySelectorAll('[data-go]').forEach(btn=>btn.addEventListener('click',()=>go(btn.dataset.go)));
   $('toggleMenu').addEventListener('click',()=>$('sidebar').classList.toggle('visible'));
   $('themeToggle').addEventListener('click',toggleTheme);
-  $('focusPdv').addEventListener('click',()=>{
-    const expanded=document.body.classList.toggle('pdv-focus');
-    $('focusPdv').textContent=expanded?'✕ Sair da tela expandida':'⛶ Tela expandida';
+  $('focusPdv').addEventListener('click',async()=>{
+    if(document.body.classList.contains('pdv-focus')){
+      if(activeSession())requestCashPassword('exit');
+      else{setKioskMode(false);await releaseBrowserFullscreen();}
+    }else{
+      if(activeSession()&&!operatorUnlocked)return requestCashPassword('resume');
+      setKioskMode(true);
+      await requestBrowserFullscreen();
+    }
+  });
+  $('securityForm').addEventListener('submit',submitCashPassword);
+  $('securityCancel').addEventListener('click',()=>{
+    if(authBusy||authRequest?.action==='resume')return;
+    closeSecurityDialog();
+  });
+  $('changeCashPassword').addEventListener('click',()=>requestCashPassword('change'));
+  // O navegador pode sair do fullscreen usando Esc; o site NÃO consegue bloquear
+  // essa tecla. Em vez disso, exige nova senha para retomar o atendimento.
+  document.addEventListener('fullscreenchange',()=>{
+    if(document.fullscreenElement){expectedFullscreenExit=false;return;}
+    if(expectedFullscreenExit){expectedFullscreenExit=false;return;}
+    if(activeSession() && document.body.classList.contains('pdv-focus') &&
+      !document.body.classList.contains('printing-receipt') && $('securityOverlay').hidden){
+      operatorUnlocked=false;
+      requestCashPassword('resume');
+    }
   });
   for(const id of ['backupQuick','reportBackup','exportBackup'])$(id).addEventListener('click',()=>{exportData();render();toast('Backup JSON gerado. Confira sua pasta de downloads.');});
   $('importBackup').addEventListener('change',async event=>{
     try{
-      if(await importData(event.target.files[0])){cart=[];render();toast('Backup restaurado. Vendas e metas carregadas.');}
+      if(await importData(event.target.files[0])){cart=[];operatorUnlocked=!activeSession();render();if(activeSession()){go('caixa',true);setKioskMode(true);requestCashPassword('resume');}toast('Backup restaurado. Vendas e metas carregadas.');}
     }catch(error){alert(error.message);}finally{event.target.value='';}
   });
   $('settingsForm').addEventListener('submit',event=>{
@@ -644,7 +825,8 @@ function bind() {
     if(event.key==='Escape'){
       if(!$('receiptOverlay').hidden)hideReceiptModal();
       else if(!$('modalOverlay').hidden)closeModal();
-      else if(document.body.classList.contains('pdv-focus')){$('focusPdv').click();}
+      else if(!$('securityOverlay').hidden){event.preventDefault();}
+      else if(document.body.classList.contains('pdv-focus')){event.preventDefault();if(activeSession())requestCashPassword('exit');else $('focusPdv').click();}
     }
   });
   document.addEventListener('click',event=>{
@@ -668,3 +850,10 @@ $('reportMonth').value=localDate().slice(0,7);
 bind();
 render();
 focusNumericField('posQty');
+// Recarregar a aba NÃO libera uma sessão previamente aberta.
+if(activeSession()){
+  operatorUnlocked=false;
+  go('caixa',true);
+  setKioskMode(true);
+  requestCashPassword('resume');
+}

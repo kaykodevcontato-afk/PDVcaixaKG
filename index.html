@@ -5,9 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#1857bf">
   <meta name="description" content="Papelaria Manager: PDV, histórico, estoque, metas e fechamento de caixa. Criado por Dev Kayko.">
-  <title>Papelaria Manager 1.3 | Dev Kayko</title>
+  <title>Papelaria Manager 1.4 | Dev Kayko</title>
   <link rel="stylesheet" href="css/style.css">
   <script defer src="js/data.js"></script>
+  <script defer src="js/security.js"></script>
   <script defer src="js/excel.js"></script>
   <script defer src="js/app.js"></script>
 </head>
@@ -16,7 +17,7 @@
   <aside class="sidebar" id="sidebar">
     <div class="brand">
       <span class="brand-icon">P</span>
-      <span class="brand-copy"><strong id="brandName">Papelaria Manager</strong><small>GESTÃO LOCAL • V1.3</small></span>
+      <span class="brand-copy"><strong id="brandName">Papelaria Manager</strong><small>GESTÃO LOCAL • V1.4</small></span>
     </div>
     <nav aria-label="Menu principal" id="navigation">
       <button class="nav-item active" data-page="inicio" title="Visão geral"><span class="nav-icon">▦</span><span>Visão geral</span></button>
@@ -56,7 +57,7 @@
 
       <!-- 02 — PDV: TELA SEM ROLAGEM EXTERNA EM DESKTOP -->
       <section class="page" id="page-caixa">
-        <div class="pdv-toolbar"><div><h2>Frente de caixa <span class="pill">PDV</span></h2><small id="posLastSale">Vendas registradas aparecem em Relatórios e histórico.</small></div><div class="action-row"><button type="button" class="btn btn-secondary" id="focusPdv">⛶ Tela expandida</button><button type="button" class="btn btn-secondary" id="openCashBtn">Abrir caixa</button><button type="button" class="btn btn-danger" id="closeCashBtn">Fechar caixa e backup</button></div></div>
+        <div class="pdv-toolbar"><div><h2>Frente de caixa <span class="pill">PDV</span></h2><small id="posLastSale">Vendas registradas aparecem em Relatórios e histórico.</small></div><div class="action-row"><button type="button" class="btn btn-secondary" id="focusPdv">⛶ Tela expandida</button><button type="button" class="btn btn-secondary" id="openCashBtn">🔐 Abrir caixa</button><button type="button" class="btn btn-danger" id="closeCashBtn">🔐 Fechar caixa e backup</button></div></div>
         <div class="pdv-grid">
           <div class="panel pdv-catalog">
             <div class="panel-head"><h3>Produtos e serviços</h3><small>Toque para adicionar</small></div>
@@ -91,7 +92,7 @@
       <section class="page" id="page-financeiro"><div class="section-head"><div><h2>Entradas e saídas</h2><p>Despesas, pagamentos, retiradas e entradas extras; vendas são registradas pelo PDV.</p></div><button class="btn btn-primary" id="newMovement">+ Novo lançamento</button></div><div class="stat-grid stats-three"><article class="stat"><span>Entradas extras do mês</span><strong id="finIncome">R$ 0,00</strong></article><article class="stat"><span>Saídas do mês</span><strong id="finExpense">R$ 0,00</strong></article><article class="stat"><span>Saldo total do mês *</span><strong id="finBalance">R$ 0,00</strong></article></div><p class="hint">* Saldo operacional: vendas + outras entradas − saídas. O valor não representa necessariamente lucro contábil.</p><div class="panel"><div class="panel-head"><h3>Histórico de movimentações</h3><small>Cancelamentos permanecem no histórico</small></div><div class="table-wrap"><table><thead><tr><th>Data</th><th>Tipo</th><th>Descrição</th><th>Categoria</th><th>Valor</th><th>Ação</th></tr></thead><tbody id="movementRows"></tbody></table></div></div></section>
 
       <!-- 06 — FUNCIONÁRIOS -->
-      <section class="page" id="page-funcionarios"><div class="section-head"><div><h2>Funcionários</h2><p>Cadastre salários e lance pagamentos no financeiro.</p></div><button class="btn btn-primary" id="newEmployee">+ Funcionário</button></div><div class="panel"><div class="table-wrap"><table><thead><tr><th>Nome</th><th>Cargo</th><th>Salário-base</th><th>Ações</th></tr></thead><tbody id="employeeRows"></tbody></table></div></div><p class="security-note">Este aplicativo local não possui login ou controle de permissões. Mantenha os dados salariais em dispositivo de acesso restrito.</p></section>
+      <section class="page" id="page-funcionarios"><div class="section-head"><div><h2>Funcionários</h2><p>Cadastre salários e lance pagamentos no financeiro.</p></div><button class="btn btn-primary" id="newEmployee">+ Funcionário</button></div><div class="panel"><div class="table-wrap"><table><thead><tr><th>Nome</th><th>Cargo</th><th>Salário-base</th><th>Ações</th></tr></thead><tbody id="employeeRows"></tbody></table></div></div><p class="security-note">A senha do caixa protege apenas o fluxo de abertura, fechamento e saída do PDV. Não é login de usuário: cadastros e informações salariais continuam locais e exigem um computador de acesso restrito.</p></section>
 
       <!-- 07 — METAS -->
       <section class="page" id="page-metas"><div class="section-head"><div><h2>Metas de vendas</h2><p>Defina objetivos em reais e acompanhe seu progresso diário e mensal.</p></div></div><div class="two-col"><div class="panel"><h3>Configurar metas</h3><form id="goalsForm" class="stack-form"><label>Meta diária de vendas (R$)<input id="goalDaily" type="number" min="0" step="0.01" required></label><label>Meta mensal de vendas (R$)<input id="goalMonthly" type="number" min="0" step="0.01" required></label><p class="hint">Digite 0 para desativar uma meta. Vendas canceladas não contam.</p><button class="btn btn-primary" type="submit">Salvar metas</button></form></div><div class="panel"><h3>Progresso das metas</h3><div id="goalsProgress"></div><p class="hint">Atingir uma meta significa alcançar o faturamento definido, não necessariamente obter lucro.</p></div></div></section>
@@ -110,7 +111,13 @@
       </section>
 
       <!-- 09 — CONFIGURAÇÕES E BACKUP -->
-      <section class="page" id="page-configuracoes"><div class="section-head"><div><h2>Configurações e segurança</h2><p>Personalize o negócio e faça cópias de segurança dos dados.</p></div></div><div class="two-col"><div class="panel"><h3>Dados da papelaria</h3><form id="settingsForm" class="stack-form"><label>Nome da papelaria<input id="settingName" required maxlength="70"></label><label>Telefone<input id="settingPhone" maxlength="30"></label><label>Endereço<input id="settingAddress" maxlength="150"></label><button class="btn btn-primary" type="submit">Salvar informações</button></form></div><div class="panel"><h3>Backup e restauração</h3><p>O arquivo JSON salva vendas, histórico, produtos, estoque, movimentações, metas e fechamentos.</p><div class="button-stack"><button class="btn btn-primary" id="exportBackup">↓ Baixar backup JSON</button><button class="btn btn-secondary" id="exportExcelAll">▦ Histórico completo para Excel (.xlsx)</button><label class="btn btn-secondary upload-label">↑ Restaurar backup<input type="file" id="importBackup" accept=".json,application/json" hidden></label></div><small id="lastBackupText"></small><p class="hint">Restaurar substitui os dados deste navegador. Guarde o arquivo em outro local.</p><p class="hint">O Excel é uma cópia para consulta e arquivo, não um banco sincronizado. Exporte novamente após novas vendas.</p></div></div><div class="panel top-gap"><h3>Armazenamento e limitações</h3><p>O GitHub Pages hospeda apenas o site; não recebe dados da papelaria. Os registros ficam neste navegador. Não use modo anônimo e não limpe os dados do site. O sistema não sincroniza computadores e não oferece login, controle fiscal ou integração com pagamentos.</p></div></section>
+      <section class="page" id="page-configuracoes"><div class="section-head"><div><h2>Configurações e segurança</h2><p>Personalize o negócio e faça cópias de segurança dos dados.</p></div></div><div class="two-col"><div class="panel"><h3>Dados da papelaria</h3><form id="settingsForm" class="stack-form"><label>Nome da papelaria<input id="settingName" required maxlength="70"></label><label>Telefone<input id="settingPhone" maxlength="30"></label><label>Endereço<input id="settingAddress" maxlength="150"></label><button class="btn btn-primary" type="submit">Salvar informações</button></form></div><div class="panel"><h3>Backup e restauração</h3><p>O arquivo JSON salva vendas, histórico, produtos, estoque, movimentações, metas e fechamentos.</p><div class="button-stack"><button class="btn btn-primary" id="exportBackup">↓ Baixar backup JSON</button><button class="btn btn-secondary" id="exportExcelAll">▦ Histórico completo para Excel (.xlsx)</button><label class="btn btn-secondary upload-label">↑ Restaurar backup<input type="file" id="importBackup" accept=".json,application/json" hidden></label></div><small id="lastBackupText"></small><p class="hint">Restaurar substitui os dados deste navegador. Guarde o arquivo em outro local.</p><p class="hint">O Excel é uma cópia para consulta e arquivo, não um banco sincronizado. Exporte novamente após novas vendas.</p></div></div><div class="panel top-gap security-panel">
+          <div class="panel-head"><h3>🔐 Senha do caixa</h3><span class="pill" id="securityStatus">Não configurada</span></div>
+          <p>Uma senha de pelo menos 6 caracteres é solicitada para <b>abrir</b>, <b>fechar</b> e <b>sair do PDV expandido</b>. A senha é armazenada como verificador criptográfico, e não em texto legível.</p>
+          <button type="button" id="changeCashPassword" class="btn btn-secondary">Criar / alterar senha do caixa</button>
+          <p class="hint">Não é login de servidor: usuários com acesso ao armazenamento do navegador podem modificar os dados. Se perder a senha, não há recuperação automática. Guarde seus backups em local seguro; eles contêm o verificador de senha.</p>
+        </div>
+        <div class="panel top-gap"><h3>Armazenamento e limitações</h3><p>O GitHub Pages hospeda apenas o site; não recebe dados da papelaria. Os registros ficam neste navegador. Não use modo anônimo e não limpe os dados do site. O sistema não sincroniza computadores e não oferece login, controle fiscal ou integração com pagamentos.</p></div></section>
     </main>
     <footer>© <span id="footerYear"></span> Papelaria Manager · Desenvolvido por <b>Dev Kayko</b></footer>
   </div>
@@ -127,8 +134,21 @@
       <button type="button" id="printBothReceipts" class="btn btn-secondary">⎙ Imprimir as duas vias</button>
       <button type="button" id="exportLastSaleExcel" class="btn btn-ghost">▦ Registrar esta venda no Excel</button>
     </div>
-    <p class="hint">Selecione a impressora térmica instalada no dispositivo e configure papel de 58 mm, sem margens. Impressão via janela do navegador; Bluetooth direto depende do modelo. Comprovante não fiscal.</p>
+    <p class="hint">Selecione a impressora térmica instalada no dispositivo e configure papel de 58 mm; a arte já inclui margens internas confortáveis. Impressão via janela do navegador; Bluetooth direto depende do modelo. Comprovante não fiscal.</p>
     <div class="modal-actions"><button type="button" class="btn btn-ghost" id="doneReceipt">Continuar atendendo</button></div>
+  </div>
+</div>
+<!-- Senha solicitada no primeiro uso, na abertura, fechamento e saída do PDV -->
+<div id="securityOverlay" class="modal-overlay auth-overlay" hidden>
+  <div class="modal auth-modal" role="dialog" aria-modal="true" aria-labelledby="securityModalTitle" aria-describedby="securityModalDescription">
+    <div class="auth-icon" aria-hidden="true">🔐</div>
+    <h3 id="securityModalTitle">Senha do caixa</h3>
+    <p id="securityModalDescription">Informe a senha do operador.</p>
+    <form id="securityForm" autocomplete="off">
+      <div class="stack-form" id="securityFields"></div>
+      <p class="auth-error" id="securityError" role="alert" hidden></p>
+      <div class="modal-actions"><button type="button" id="securityCancel" class="btn btn-secondary">Cancelar</button><button type="submit" id="securityConfirm" class="btn btn-primary">Confirmar</button></div>
+    </form>
   </div>
 </div>
 <div id="receiptPaper" aria-hidden="true"></div>
