@@ -201,3 +201,9 @@ body.role-operator .pdv-toolbar #pdvSwitchUser{display:inline-block}
 @media print{.login-overlay,.cash-access-panel,#cashAccessOverlay,.user-role-chip,#switchUser,#pdvSwitchUser{display:none!important}}
 
 .pdv-profile{font-size:.7rem;display:inline-flex;vertical-align:middle;padding:5px 8px;color:var(--primary);background:var(--primary-soft);border-radius:30px;font-weight:800;white-space:nowrap}
+
+/* Crédito clicável do desenvolvedor: abre o portfólio local em nova aba. */
+.dev-credit-link{color:inherit;font-weight:800;text-decoration:none;text-underline-offset:3px}
+.dev-credit-link:hover,.dev-credit-link:focus-visible{color:var(--primary);text-decoration:underline}
+.sidebar .dev-credit-link:hover,.sidebar .dev-credit-link:focus-visible{color:#fff}
+.dev-credit-link:focus-visible{outline:2px solid var(--primary);outline-offset:3px;border-radius:2px}

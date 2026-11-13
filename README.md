@@ -1,8 +1,14 @@
-# Papelaria Manager 1.6 — Dev Kayko
+# Papelaria Manager 1.6.2 — Dev Kayko
 
 Sistema de gestão de papelaria e gráfica rápida, desenvolvido para rodar em **GitHub Pages** com HTML, CSS e JavaScript, sem servidor. Mantém o PDV completo, estoque, produtos e serviços, vendas, fechamento, Excel, comprovantes 58 mm, metas, despesas, funcionários, backup e modo claro/escuro.
 
-## Acesso simplificado — novidade da versão 1.6
+## Novidade da versão 1.6.2 — Link do desenvolvedor
+
+Ao clicar no nome **Dev Kayko** no rodapé, no menu lateral ou na tela inicial de escolha de perfil, o site abre **`dev-kayko/index.html`** em outra aba. Esta página é a apresentação profissional fornecida pelo desenvolvedor (websites, sistemas e gráfica rápida). O PDV permanece aberto.
+
+A pasta **`dev-kayko/` é indispensável**: envie-a junto com os demais arquivos para o repositório. Para atualizar uma instalação existente, mantenha o mesmo endereço publicado e faça um backup JSON antes de substituir arquivos.
+
+## Acesso simplificado — introduzido na versão 1.6
 
 | Ação | Funcionário | Dono |
 | --- | --- | --- |
@@ -35,8 +41,8 @@ O funcionário não acessa o histórico, Excel nem o backup. Ao fechar o caixa p
 
 ## Instalar no GitHub Pages
 
-1. Baixe e extraia o ZIP da versão 1.6.
-2. Envie para o repositório `index.html`, a pasta `css` e a pasta `js`, substituindo os arquivos antigos.
+1. Baixe e extraia o ZIP da versão 1.6.2.
+2. Envie para o repositório `index.html` e as pastas `css`, `js` e **`dev-kayko`**, substituindo os arquivos antigos.
 3. Em **Settings → Pages** selecione `Deploy from a branch`, branch `main`, pasta `/ (root)`.
 4. Atualize o navegador com `Ctrl + F5` e configure a senha operacional do caixa se necessário.
 5. Faça uma venda de teste e confira o fechamento no perfil do dono.
@@ -45,7 +51,9 @@ O funcionário não acessa o histórico, Excel nem o backup. Ao fechar o caixa p
 
 ```text
 papelaria-manager/
-├── index.html       # Páginas, botões, login e formulários
+├── index.html       # Páginas, botões, login, formulários e links para o portfólio
+├── dev-kayko/
+│   └── index.html   # Página de apresentação profissional do desenvolvedor
 ├── css/style.css    # Cores, telas, PDV compacto e impressão
 ├── js/data.js       # Cadastro, chave de armazenamento e backup
 ├── js/security.js   # Verificação local das senhas (PBKDF2)
