@@ -44,3 +44,15 @@ Relatórios demonstram movimentações registradas, **não cálculo fiscal ou co
 A operação mais segura é usar **um computador principal**, com navegador fixo e backups diários. Se precisar de vários caixas, controle de permissões, banco online ou emissão fiscal, será necessário um serviço de backend.
 
 **Desenvolvido por Dev Kayko.**
+
+
+## Atualização 1.1 — PDV rápido
+
+O caixa agora possui catálogo de **serviços e produtos em botões**, pesquisa por nome/código/categoria, filtros, carrinho e teclado numérico. Toque em um botão para adicioná-lo à venda, usando a quantidade indicada.
+
+- Clique no campo **Quantidade**, **Desconto** ou **Valor recebido** para escolher onde o teclado numérico digita.
+- Os botões refletem os preços registrados nos cadastros.
+- Edite as categorias nos formulários de **Produtos e estoque** e **Serviços**. Registros antigos sem categoria aparecem em **Geral**.
+- Personalize o visual do PDV no final de `css/style.css` e os filtros em `renderPosTiles()` dentro de `js/app.js`.
+- Os dados locais antigos continuam sendo usados: **não altere `DB_KEY`** em `js/data.js`.
+- Ao publicar, substitua todos os arquivos do projeto mantendo seus caminhos. Faça um backup do sistema antigo antes da atualização.
